@@ -6,10 +6,11 @@
 
 //local
 #include "../include/CrossIPC.hpp"
+#include "../include/CrossForkExec.hpp"
 
 int main(int argc, char** argv)
 {
-	
+	/*
 	CrossIPC::AnonymousSocketPair pair;
 
 	try {
@@ -19,17 +20,13 @@ int main(int argc, char** argv)
 		std::cerr << e.what() << "\n";
 		return 0;
 	}
-
 	CrossIPC::AnonymousSocket & a = pair.first;
 	CrossIPC::AnonymousSocket & b = pair.second;
-
-
-
-	std::cout << "Writing in a\n";
-
 	a.close();
 	b.close();
+	*/
 
+	
 
 
 	return 0;

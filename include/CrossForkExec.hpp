@@ -11,6 +11,9 @@
 #include <string>
 #include <vector>
 #include <exception>
+//#include <memory>
+
+#include <string.h>
 
 //platform spesific
 #ifdef WINDOWS
@@ -45,7 +48,7 @@ namespace CrossForkExec
 		Constructor
 		*/
 #ifdef WINDOWS
-		ChildProcess(PROCESS_INFORMATION & pi);
+		ChildProcess(const PROCESS_INFORMATION & pi);
 #elif LINUX
 
 #endif
