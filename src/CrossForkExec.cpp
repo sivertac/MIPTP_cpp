@@ -25,7 +25,9 @@ namespace CrossForkExec
 	ChildProcess forkExec(const std::string & program_path, const std::vector<std::string> & program_args)
 	{
 		STARTUPINFO startup_info;
+		ZeroMemory(&startup_info, sizeof(STARTUPINFO));
 		PROCESS_INFORMATION process_information;
+		ZeroMemory(&process_information, sizeof(PROCESS_INFORMATION));
 
 		std::ostringstream cmd_stream;
 		cmd_stream << program_path;
@@ -33,19 +35,16 @@ namespace CrossForkExec
 			cmd_stream << " " << s;
 		}
 
-		//std::size_t len = program_path.length + 1;
-		//LPCSTR app = new char[len];
-		//strncpy_s(app, len, program_path.c_str(), len);
-
 		std::string cmd_string = cmd_stream.str();
-		len = cmd_string.length() + 1; //+1 for \0
+		std::size_t len = cmd_string.length() + 1; //+1 for \0
 		LPSTR cmd = new char[len];	
 		strncpy_s(cmd, len, cmd_string.c_str(), len);		
 
 
 		std::cout << cmd << "\n";
 
-		if (!CreateProcess(,
+		if (!CreateProcess(
+			NULL,
 			cmd,
 			NULL,
 			NULL,
