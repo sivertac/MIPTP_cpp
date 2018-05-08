@@ -18,25 +18,26 @@ namespace CrossIPC
 	{
 		SECURITY_ATTRIBUTES sa_attr;
 		sa_attr.nLength = sizeof(SECURITY_ATTRIBUTES);
+		std::memset(&sa_attr, 0, sizeof(SECURITY_ATTRIBUTES));
 		sa_attr.bInheritHandle = TRUE;
 		sa_attr.lpSecurityDescriptor = NULL;
 		
-		PHANDLE write_1 = NULL;
-		PHANDLE write_2 = NULL;
-		PHANDLE read_1 = NULL;
-		PHANDLE read_2 = NULL;
+		HANDLE write_1 = NULL;
+		HANDLE write_2 = NULL;
+		HANDLE read_1 = NULL;
+		HANDLE read_2 = NULL;
 
-		if (!CreatePipe(read_1, write_2, &sa_attr, 0)) {
+		if (!CreatePipe(&read_1, &write_2, &sa_attr, 0)) {
 			throw ErrorPipeException(GetLastError());
 		}
 
-		if (!CreatePipe(read_2, write_1, &sa_attr, 0)) {
+		if (!CreatePipe(&read_2, &write_1, &sa_attr, 0)) {
 			throw ErrorPipeException(GetLastError());
 		}
 		return AnonymousSocketPair(AnonymousSocket(read_1, write_1), AnonymousSocket(read_2, write_2));
 	}
 
-	AnonymousSocket::AnonymousSocket(const PHANDLE read_pipe, const PHANDLE write_pipe) :
+	AnonymousSocket::AnonymousSocket(const HANDLE read_pipe, const HANDLE write_pipe) :
 		m_read_pipe(read_pipe),
 		m_write_pipe(write_pipe)
 	{
@@ -71,9 +72,15 @@ namespace CrossIPC
 		}
 		return static_cast<std::size_t>(read_len);
 	}
+
+	void AnonymousSocket::close()
+	{
+		CloseHandle(m_read_pipe);
+		CloseHandle(m_write_pipe);
+	}
 	
 	
-#elif UNIX
+#elif LINUX
 
 #endif
 

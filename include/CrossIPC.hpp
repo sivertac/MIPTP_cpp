@@ -18,7 +18,7 @@
 //https://msdn.microsoft.com/en-us/library/windows/desktop/ms682499(v=vs.85).aspx
 #include <Windows.h>
 
-#elif UNIX
+#elif LINUX
 //unix stuff
 #else
 //error
@@ -33,16 +33,16 @@ namespace CrossIPC
 
 #ifdef WINDOWS
 	std::string formatPipeError(DWORD error);
-#endif
-
 	class ErrorPipeException : public std::runtime_error
 	{
 	public:
 		ErrorPipeException(DWORD error) :
-			std::runtime_error("Pipe error")
+			runtime_error("Pipe error")
 		{
 		}
 	};
+#endif
+
 	
 	class AnonymousSocket
 	{
@@ -50,11 +50,15 @@ namespace CrossIPC
 		/*
 		Constructor
 		*/
+		AnonymousSocket()
+		{
+		}
 #ifdef WINDOWS
-		AnonymousSocket(const PHANDLE read_pipe, const PHANDLE write_pipe);
-#elif UNIX
+		AnonymousSocket(const HANDLE read_pipe, const HANDLE write_pipe);
+#elif LINUX
 
 #endif
+
 		/*
 		Write to socket
 		Parameters:
@@ -76,22 +80,27 @@ namespace CrossIPC
 		*/
 		std::size_t read(char* buf, std::size_t buf_size);
 		//void read(std::string & str);
+
+		/*
+		Close socket (will close underlying comms)
+		*/
+		void close();
 	
 	private:
 
 	#ifdef WINDOWS
-		const PHANDLE m_read_pipe;
-		const PHANDLE m_write_pipe;
-	#elif UNIX
+		HANDLE m_read_pipe;
+		HANDLE m_write_pipe;
+	#elif LINUX
 		//unix stuff
 	#endif
 
 	};
 
+	using AnonymousSocketPair = std::pair<AnonymousSocket, AnonymousSocket>;
 	/*
 	Create a AnonymousSocketPair
 	*/
-	using AnonymousSocketPair = std::pair<AnonymousSocket, AnonymousSocket>;
 	AnonymousSocketPair createAnonymousSocketPair();
 
 	/*

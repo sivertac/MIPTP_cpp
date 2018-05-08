@@ -9,16 +9,26 @@
 
 int main(int argc, char** argv)
 {
+	
+	CrossIPC::AnonymousSocketPair pair;
 
-	std::cout << "Hello World!\n";
+	try {
+		pair = CrossIPC::createAnonymousSocketPair();
+	}
+	catch (CrossIPC::ErrorPipeException & e) {
+		std::cerr << e.what() << "\n";
+		return 0;
+	}
 
-#ifdef WINDOWS
-	std::cout << "WINDOWS BINARY\n";
-#elif UNIX
-	std::cout << "UNIX BINARY\n";
-#endif
+	CrossIPC::AnonymousSocket & a = pair.first;
+	CrossIPC::AnonymousSocket & b = pair.second;
 
 
+
+	std::cout << "Writing in a\n";
+
+	a.close();
+	b.close();
 
 
 
