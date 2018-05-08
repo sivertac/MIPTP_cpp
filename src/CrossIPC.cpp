@@ -9,7 +9,8 @@ namespace CrossIPC
 
 	std::string formatPipeError(DWORD error)
 	{
-		std::ostringstream s("Windows pipe error: ");
+		std::ostringstream s;
+		s << "Windows pipe error: ";
 		s << error;
 		return s.str();
 	}

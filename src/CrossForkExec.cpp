@@ -27,16 +27,25 @@ namespace CrossForkExec
 		STARTUPINFO startup_info;
 		PROCESS_INFORMATION process_information;
 
-		std::ostringstream cmd_stream(program_path);
+		std::ostringstream cmd_stream;
+		cmd_stream << program_path;
 		for (std::string s : program_args) {
 			cmd_stream << " " << s;
 		}
+
+		//std::size_t len = program_path.length + 1;
+		//LPCSTR app = new char[len];
+		//strncpy_s(app, len, program_path.c_str(), len);
+
 		std::string cmd_string = cmd_stream.str();
-		std::size_t len = cmd_string.length() + 1; //+1 for \0
+		len = cmd_string.length() + 1; //+1 for \0
 		LPSTR cmd = new char[len];	
 		strncpy_s(cmd, len, cmd_string.c_str(), len);		
 
-		if (!CreateProcess(NULL,
+
+		std::cout << cmd << "\n";
+
+		if (!CreateProcess(,
 			cmd,
 			NULL,
 			NULL,

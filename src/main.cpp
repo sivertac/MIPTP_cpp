@@ -2,6 +2,8 @@
 //Author: Sivert Andresen Cubedo
 
 #include <iostream>
+#include <sstream>
+#include <vector>
 #include <string>
 
 //local
@@ -26,8 +28,28 @@ int main(int argc, char** argv)
 	b.close();
 	*/
 
-	
+	if (argc == 1) {
+		std::cout << "Hello from Parent\n";
+		std::string program = "MIPTP_cpp_win.exe";
+		std::vector<std::string> args;
+		args.push_back("hello1");
+		args.push_back("hello2");
 
+		std::cout << "Spawning Child\n";
+		auto child = CrossForkExec::forkExec(program, args);
+		std::cout << "Joining for Child\n";
+		child.join();
+		std::cout << "Child has returned\n";
+		child.close();
+		return 0;
+	}
+	else {
+		std::cout << "Hello from Child\n";
+		
+		Sleep(1000);
 
-	return 0;
+		std::cout << "Child exit\n";
+
+		return 0;
+	}
 }
