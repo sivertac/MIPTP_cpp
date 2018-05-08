@@ -4,6 +4,9 @@
 #include <iostream>
 #include <string>
 
+//local
+#include "../include/CrossIPC.hpp"
+
 int main(int argc, char** argv)
 {
 

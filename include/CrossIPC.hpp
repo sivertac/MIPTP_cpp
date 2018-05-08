@@ -8,6 +8,7 @@
 //includes
 //common
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <exception>
 
@@ -30,9 +31,17 @@ namespace CrossIPC
 	{
 	};
 
+#ifdef WINDOWS
+	std::string formatPipeError(DWORD error);
+#endif
+
 	class ErrorPipeException : public std::runtime_error
 	{
-
+	public:
+		ErrorPipeException(DWORD error) :
+			std::runtime_error("Pipe error")
+		{
+		}
 	};
 	
 	class AnonymousSocket
@@ -42,27 +51,37 @@ namespace CrossIPC
 		Constructor
 		*/
 #ifdef WINDOWS
-		AnonymousSocket(const HANDLE read_pipe, const HANDLE write_pipe);
+		AnonymousSocket(const PHANDLE read_pipe, const PHANDLE write_pipe);
 #elif UNIX
 
 #endif
 		/*
 		Write to socket
+		Parameters:
+			buf			buffer to write from
+			len			number of bytes to write
+		Return:
+			size_t		number of bytes written
 		*/
-		void write(char* buf, std::size_t len);
-		void write(std::string & str);
+		std::size_t write(char* buf, std::size_t len);
+		//void write(std::string & str);
 		
 		/*
 		Read from socket
+		Parameters:
+			buf			buffer to read to
+			buf_size	max bytes to read
+		Return:
+			size_t		number of bytes read
 		*/
-		void read(char* buf, std::size_t len);
-		void read(std::string & str);
+		std::size_t read(char* buf, std::size_t buf_size);
+		//void read(std::string & str);
 	
 	private:
 
 	#ifdef WINDOWS
-		const HANDLE m_read_pipe;
-		const HANDLE m_write_pipe;
+		const PHANDLE m_read_pipe;
+		const PHANDLE m_write_pipe;
 	#elif UNIX
 		//unix stuff
 	#endif
