@@ -12,7 +12,7 @@
 
 int main(int argc, char** argv)
 {
-	/*
+	
 	CrossIPC::AnonymousSocketPair pair;
 
 	try {
@@ -24,9 +24,19 @@ int main(int argc, char** argv)
 	}
 	CrossIPC::AnonymousSocket & a = pair.first;
 	CrossIPC::AnonymousSocket & b = pair.second;
+
+	std::cout << a.toString() << "\n";
+	
+	CrossIPC::AnonymousSocket c(a.toString());
+
+	std::cout << c.toString() << "\n";
+
+
+	
+
 	a.close();
 	b.close();
-	*/
+	
 
 	if (argc == 1) {
 		std::cout << "Hello from Parent\n";
@@ -46,7 +56,7 @@ int main(int argc, char** argv)
 	else {
 		std::cout << "Hello from Child\n";
 		
-		Sleep(1000);
+		Sleep(2000);
 
 		std::cout << "Child exit\n";
 

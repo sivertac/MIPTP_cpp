@@ -19,7 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\CrossForkExec.cpp" />
+    <ClCompile Include="..\..\src\CrossIPC.cpp" />
     <ClCompile Include="..\..\src\test_child.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\CrossForkExec.hpp" />
+    <ClInclude Include="..\..\include\CrossIPC.hpp" />
+    <ClInclude Include="..\..\include\EventPoll.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

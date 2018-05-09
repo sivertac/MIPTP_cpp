@@ -40,6 +40,10 @@ namespace CrossIPC
 			runtime_error("Pipe error")
 		{
 		}
+		ErrorPipeException(std::string error) :
+			runtime_error(error)
+		{
+		}
 	};
 #endif
 
@@ -53,6 +57,7 @@ namespace CrossIPC
 		AnonymousSocket()
 		{
 		}
+		AnonymousSocket(const std::string & pipe_string);
 #ifdef WINDOWS
 		AnonymousSocket(const HANDLE read_pipe, const HANDLE write_pipe);
 #elif LINUX
@@ -82,6 +87,12 @@ namespace CrossIPC
 		//void read(std::string & str);
 
 		/*
+		Create a string that holds IPC descriptors (that can be used in constructor).
+		Format: <m_read_pipe>-<m_write_pipe>
+		*/
+		std::string toString();
+
+		/*
 		Close socket (will close underlying comms)
 		*/
 		void close();
@@ -89,8 +100,8 @@ namespace CrossIPC
 	private:
 
 	#ifdef WINDOWS
-		HANDLE m_read_pipe;
-		HANDLE m_write_pipe;
+		HANDLE m_read_pipe = NULL;
+		HANDLE m_write_pipe = NULL;
 	#elif LINUX
 		//unix stuff
 	#endif

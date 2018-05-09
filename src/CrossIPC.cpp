@@ -38,6 +38,27 @@ namespace CrossIPC
 		return AnonymousSocketPair(AnonymousSocket(read_1, write_1), AnonymousSocket(read_2, write_2));
 	}
 
+	AnonymousSocket::AnonymousSocket(const std::string & pipe_string)
+	{
+		std::size_t mid_index = pipe_string.find_first_of('-');
+		if (mid_index == pipe_string.npos) {
+			throw ErrorPipeException("Invalid pipe string");
+		}
+
+		std::string read_str = pipe_string.substr(0, mid_index);
+		std::string write_str = pipe_string.substr(mid_index + 1, pipe_string.length() - (mid_index + 1));
+
+		std::stringstream ss_read(read_str);
+		std::stringstream ss_write(write_str);
+		UINT_PTR read_ptr;
+		UINT_PTR write_ptr;
+		ss_read >> read_ptr;
+		ss_write >> write_ptr;
+
+		m_read_pipe = reinterpret_cast<HANDLE>(read_ptr);
+		m_write_pipe = reinterpret_cast<HANDLE>(write_ptr);
+	}
+
 	AnonymousSocket::AnonymousSocket(const HANDLE read_pipe, const HANDLE write_pipe) :
 		m_read_pipe(read_pipe),
 		m_write_pipe(write_pipe)
@@ -74,10 +95,19 @@ namespace CrossIPC
 		return static_cast<std::size_t>(read_len);
 	}
 
+	std::string AnonymousSocket::toString()
+	{
+		std::stringstream ss;
+		ss << reinterpret_cast<std::size_t>(m_read_pipe) << "-" << reinterpret_cast<std::size_t>(m_write_pipe);
+		return ss.str();
+	}
+
 	void AnonymousSocket::close()
 	{
 		CloseHandle(m_read_pipe);
+		m_read_pipe = NULL;
 		CloseHandle(m_write_pipe);
+		m_write_pipe = NULL;
 	}
 	
 	
