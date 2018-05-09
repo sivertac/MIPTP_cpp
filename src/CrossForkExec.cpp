@@ -25,9 +25,9 @@ namespace CrossForkExec
 	ChildProcess forkExec(const std::string & program_path, const std::vector<std::string> & program_args)
 	{
 		STARTUPINFO startup_info;
-		ZeroMemory(&startup_info, sizeof(STARTUPINFO));
+		std::memset(&startup_info, 0, sizeof(STARTUPINFO));
 		PROCESS_INFORMATION process_information;
-		ZeroMemory(&process_information, sizeof(PROCESS_INFORMATION));
+		std::memset(&process_information, 0, sizeof(PROCESS_INFORMATION));
 
 		std::ostringstream cmd_stream;
 		cmd_stream << program_path;
@@ -37,11 +37,13 @@ namespace CrossForkExec
 
 		std::string cmd_string = cmd_stream.str();
 		std::size_t len = cmd_string.length() + 1; //+1 for \0
-		LPSTR cmd = new char[len];	
-		strncpy_s(cmd, len, cmd_string.c_str(), len);		
+		
+		LPSTR cmd = (LPSTR)std::malloc(len);	
+		if (cmd == NULL) {
+			throw std::runtime_error("forkExec: std::malloc()");
+		}
 
-
-		std::cout << cmd << "\n";
+		strncpy_s(cmd, len, cmd_string.c_str(), len);
 
 		if (!CreateProcess(
 			NULL,
@@ -66,6 +68,4 @@ namespace CrossForkExec
 #elif LINUX
 
 #endif
-
-
 }

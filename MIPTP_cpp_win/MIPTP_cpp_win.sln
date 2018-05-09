@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27703.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MIPTP_cpp_win", "MIPTP_cpp_win.vcxproj", "{13749E2B-B245-4C99-BDC1-D0B4207A5319}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_server_win", "..\test_server_win\test_server_win.vcxproj", "{450BCBEF-48E1-4D59-8C5B-6DA14ED1910D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{13749E2B-B245-4C99-BDC1-D0B4207A5319}.Release|x64.Build.0 = Release|x64
 		{13749E2B-B245-4C99-BDC1-D0B4207A5319}.Release|x86.ActiveCfg = Release|Win32
 		{13749E2B-B245-4C99-BDC1-D0B4207A5319}.Release|x86.Build.0 = Release|Win32
+		{450BCBEF-48E1-4D59-8C5B-6DA14ED1910D}.Debug|x64.ActiveCfg = Debug|x64
+		{450BCBEF-48E1-4D59-8C5B-6DA14ED1910D}.Debug|x64.Build.0 = Debug|x64
+		{450BCBEF-48E1-4D59-8C5B-6DA14ED1910D}.Debug|x86.ActiveCfg = Debug|Win32
+		{450BCBEF-48E1-4D59-8C5B-6DA14ED1910D}.Debug|x86.Build.0 = Debug|Win32
+		{450BCBEF-48E1-4D59-8C5B-6DA14ED1910D}.Release|x64.ActiveCfg = Release|x64
+		{450BCBEF-48E1-4D59-8C5B-6DA14ED1910D}.Release|x64.Build.0 = Release|x64
+		{450BCBEF-48E1-4D59-8C5B-6DA14ED1910D}.Release|x86.ActiveCfg = Release|Win32
+		{450BCBEF-48E1-4D59-8C5B-6DA14ED1910D}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

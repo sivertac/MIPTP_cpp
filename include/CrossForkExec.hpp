@@ -59,7 +59,7 @@ namespace CrossForkExec
 		void join();
 
 		/*
-		Close ChildProcess (kill the process)
+		Close ChildProcess (close the handlers)
 		*/
 		void close();
 	private:
