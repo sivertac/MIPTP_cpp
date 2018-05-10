@@ -127,8 +127,8 @@ namespace CrossIPC
 		} while (ret >= buf_size - 1);
 		return ss.str();
 	}
-}
 
+}
 
 
 

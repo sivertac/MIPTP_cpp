@@ -17,6 +17,8 @@ int main(int argc, char** argv)
 	
 	std::cout << "Parent spawning child\n";
 	auto child = CrossForkExec::forkExec("test_child_win.exe", { pair.second.toString() });
+	pair.second.close();
+
 
 	Sleep(150);
 	std::cout << "Parent reading from child\n";
@@ -28,12 +30,18 @@ int main(int argc, char** argv)
 	std::cout << "Parent writing to child\n";
 	str = "Hello from parenjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj76598795688709657687659760987986jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjt";
 	child_sock.writeString(str);
+	
+	//int i = 4;
+	//child_sock << 4;
+
 	std::cout << "String len: " << str.length() << "\n";
 
 	std::cout << "Parent joining child\n";
 	child.join();
 	
 	std::cout << "Parent done\n";
+	child_sock.close();
+	child.close();
 
 
 

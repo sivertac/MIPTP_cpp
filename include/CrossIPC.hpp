@@ -11,6 +11,7 @@
 #include <sstream>
 #include <string>
 #include <exception>
+#include <type_traits>
 
 //platform spesific
 #ifdef WINDOWS
@@ -129,6 +130,25 @@ namespace CrossIPC
 			void
 		*/
 		void close();
+
+		template <typename T>
+		friend AnonymousSocket & operator<<(AnonymousSocket & sock, const T & source)
+		{
+			std::size_t ret = sock.write((char*)&source, sizeof(T));
+			return sock;			
+		}
+		template <typename T>
+		friend AnonymousSocket & operator<<(AnonymousSocket & sock, const T * source)
+		{
+			std::size_t ret = sock.write((char*)source, sizeof(T));
+			return sock;
+		}
+		template <typename T>
+		friend AnonymousSocket & operator>>(AnonymousSocket & sock, T & dest)
+		{
+			std::size_t ret = sock.read((char*)&dest, sizeof(T));
+			return sock;
+		}
 	private:
 
 	#ifdef WINDOWS
@@ -139,11 +159,6 @@ namespace CrossIPC
 	#endif
 
 	};
-
-	//std::ostream & operator<<(std::ostream & os, const AnonymousSocket & sock)
-	//{
-	//
-	//}
 
 	using AnonymousSocketPair = std::pair<AnonymousSocket, AnonymousSocket>;
 	/*

@@ -25,6 +25,7 @@ int main(int argc, char** argv)
 
 	Sleep(100);
 	std::cout << "Child done\n";
+	parent_sock.close();
 	
 	return 0;
 }
