@@ -60,7 +60,7 @@ namespace CrossForkExec
 			throw ErrorProcessException(GetLastError());
 		}
 
-		free(cmd);
+		std::free(cmd);
 
 		return ChildProcess(process_information);
 	}
