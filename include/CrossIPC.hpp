@@ -52,51 +52,83 @@ namespace CrossIPC
 	{
 	public:
 		/*
-		Constructor
+		Constructor.
+		Parameters:
 		*/
 		AnonymousSocket()
 		{
 		}
+		/*
+		Constructor.
+		Parameters:
+			pipe_string		ref to string
+		*/
 		AnonymousSocket(const std::string & pipe_string);
 #ifdef WINDOWS
+		/*
+		Constructor.
+		Parameters:
+			read_pipe		HANDLE to read pipe
+			write_pipe		HANDLE to write pipe
+		*/
 		AnonymousSocket(const HANDLE read_pipe, const HANDLE write_pipe);
 #elif LINUX
 
 #endif
 
 		/*
-		Write to socket
+		Write to socket.
 		Parameters:
 			buf			buffer to write from
 			len			number of bytes to write
 		Return:
 			size_t		number of bytes written
 		*/
-		std::size_t write(char* buf, std::size_t len);
-		//void write(std::string & str);
+		std::size_t write(const char* buf, std::size_t len);
 		
+		/*
+		Write string to socket.
+		Parameters:
+			str			ref to string
+		Return:		
+			void
+		*/
+		void writeString(const std::string & str);
+
 		/*
 		Read from socket
 		Parameters:
 			buf			buffer to read to
 			buf_size	max bytes to read
-		Return:
+		Return:		
 			size_t		number of bytes read
 		*/
 		std::size_t read(char* buf, std::size_t buf_size);
-		//void read(std::string & str);
+		
+		/*
+		Read string from socket.
+		Parameters:
+		Return:		
+			std::string
+		*/
+		std::string readString();
 
 		/*
 		Create a string that holds IPC descriptors (that can be used in constructor).
 		Format: <m_read_pipe>-<m_write_pipe>
+		Parameters:
+		Return:		
+			std::string
 		*/
 		std::string toString();
 
 		/*
 		Close socket (will close underlying comms)
+		Parameters:
+		Return:	
+			void
 		*/
 		void close();
-	
 	private:
 
 	#ifdef WINDOWS
@@ -107,6 +139,11 @@ namespace CrossIPC
 	#endif
 
 	};
+
+	//std::ostream & operator<<(std::ostream & os, const AnonymousSocket & sock)
+	//{
+	//
+	//}
 
 	using AnonymousSocketPair = std::pair<AnonymousSocket, AnonymousSocket>;
 	/*

@@ -44,17 +44,14 @@ namespace CrossIPC
 		if (mid_index == pipe_string.npos) {
 			throw ErrorPipeException("Invalid pipe string");
 		}
-
 		std::string read_str = pipe_string.substr(0, mid_index);
 		std::string write_str = pipe_string.substr(mid_index + 1, pipe_string.length() - (mid_index + 1));
-
 		std::stringstream ss_read(read_str);
 		std::stringstream ss_write(write_str);
 		UINT_PTR read_ptr;
 		UINT_PTR write_ptr;
 		ss_read >> read_ptr;
 		ss_write >> write_ptr;
-
 		m_read_pipe = reinterpret_cast<HANDLE>(read_ptr);
 		m_write_pipe = reinterpret_cast<HANDLE>(write_ptr);
 	}
@@ -65,7 +62,7 @@ namespace CrossIPC
 	{
 	}
 
-	std::size_t AnonymousSocket::write(char* buf, std::size_t len)
+	std::size_t AnonymousSocket::write(const char* buf, std::size_t len)
 	{
 		DWORD written_len;
 		if (!WriteFile(m_write_pipe, buf, static_cast<DWORD>(len), &written_len, NULL)) {
@@ -109,12 +106,27 @@ namespace CrossIPC
 		CloseHandle(m_write_pipe);
 		m_write_pipe = NULL;
 	}
-	
-	
+		
 #elif LINUX
 
 #endif
-
+	void AnonymousSocket::writeString(const std::string & str)
+	{
+		std::size_t ret = write(str.c_str(), str.length());
+	}
+	std::string AnonymousSocket::readString()
+	{
+		const std::size_t buf_size = 1024;
+		char buf[buf_size];
+		std::stringstream ss;
+		std::size_t ret;
+		do {
+			ret = read(buf, buf_size - 1);
+			buf[ret] = '\0';
+			ss << buf;
+		} while (ret >= buf_size - 1);
+		return ss.str();
+	}
 }
 
 

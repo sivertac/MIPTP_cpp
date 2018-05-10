@@ -11,55 +11,33 @@
 #include "../include/CrossForkExec.hpp"
 
 int main(int argc, char** argv)
-{
+{	
+	auto pair = CrossIPC::createAnonymousSocketPair();
+	CrossIPC::AnonymousSocket & child_sock = pair.first;
 	
-	CrossIPC::AnonymousSocketPair pair;
+	std::cout << "Parent spawning child\n";
+	auto child = CrossForkExec::forkExec("test_child_win.exe", { pair.second.toString() });
 
-	try {
-		pair = CrossIPC::createAnonymousSocketPair();
-	}
-	catch (CrossIPC::ErrorPipeException & e) {
-		std::cerr << e.what() << "\n";
-		return 0;
-	}
-	CrossIPC::AnonymousSocket & a = pair.first;
-	CrossIPC::AnonymousSocket & b = pair.second;
+	Sleep(150);
+	std::cout << "Parent reading from child\n";
+	std::string str = child_sock.readString();
+	std::cout << str << "\n";
+	std::cout << "String len: " << str.length() << "\n";
 
-	std::cout << a.toString() << "\n";
+	Sleep(100);
+	std::cout << "Parent writing to child\n";
+	str = "Hello from parenjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj76598795688709657687659760987986jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjt";
+	child_sock.writeString(str);
+	std::cout << "String len: " << str.length() << "\n";
+
+	std::cout << "Parent joining child\n";
+	child.join();
 	
-	CrossIPC::AnonymousSocket c(a.toString());
-
-	std::cout << c.toString() << "\n";
+	std::cout << "Parent done\n";
 
 
-	
 
-	a.close();
-	b.close();
-	
 
-	if (argc == 1) {
-		std::cout << "Hello from Parent\n";
-		std::string program = "MIPTP_cpp_win.exe";
-		std::vector<std::string> args;
-		args.push_back("hello1");
-		args.push_back("hello2");
 
-		std::cout << "Spawning Child\n";
-		auto child = CrossForkExec::forkExec(program, args);
-		std::cout << "Joining for Child\n";
-		child.join();
-		std::cout << "Child has returned\n";
-		child.close();
-		return 0;
-	}
-	else {
-		std::cout << "Hello from Child\n";
-		
-		Sleep(2000);
-
-		std::cout << "Child exit\n";
-
-		return 0;
-	}
+	return 0;
 }
