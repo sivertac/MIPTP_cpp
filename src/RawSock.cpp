@@ -20,6 +20,8 @@ namespace RawSock
 				throw std::runtime_error("malloc()");
 			}
 		}
+		
+		ret = GetInterfaceInfo(info, &info_buf_len);
 
 
 		return std::vector<std::string>();
