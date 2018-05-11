@@ -6,15 +6,6 @@
 namespace CrossIPC
 {
 #ifdef WINDOWS
-
-	std::string formatPipeError(DWORD error)
-	{
-		std::ostringstream s;
-		s << "Windows pipe error: ";
-		s << error;
-		return s.str();
-	}
-
 	AnonymousSocketPair createAnonymousSocketPair()
 	{
 		SECURITY_ATTRIBUTES sa_attr;
@@ -29,11 +20,11 @@ namespace CrossIPC
 		HANDLE read_2 = NULL;
 
 		if (!CreatePipe(&read_1, &write_2, &sa_attr, 0)) {
-			throw ErrorPipeException(GetLastError());
+			throw ErrorPipeException();
 		}
 
 		if (!CreatePipe(&read_2, &write_1, &sa_attr, 0)) {
-			throw ErrorPipeException(GetLastError());
+			throw ErrorPipeException();
 		}
 		return AnonymousSocketPair(AnonymousSocket(read_1, write_1), AnonymousSocket(read_2, write_2));
 	}
@@ -71,7 +62,7 @@ namespace CrossIPC
 				throw BrokenPipeException();
 			}
 			else {
-				throw ErrorPipeException(error);
+				throw ErrorPipeException();
 			}
 		}
 		return static_cast<std::size_t>(written_len);
@@ -86,7 +77,7 @@ namespace CrossIPC
 				throw BrokenPipeException();
 			}
 			else {
-				throw ErrorPipeException(error);
+				throw ErrorPipeException();
 			}
 		}
 		return static_cast<std::size_t>(read_len);

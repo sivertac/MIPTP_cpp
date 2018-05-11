@@ -21,6 +21,8 @@
 
 #elif LINUX
 //unix stuff
+#include <sys/socket.h>
+#include <sys/un.h>
 #else
 //error
 	#error CrossIPC.hpp: Not defined target OS
@@ -32,12 +34,10 @@ namespace CrossIPC
 	{
 	};
 
-#ifdef WINDOWS
-	std::string formatPipeError(DWORD error);
 	class ErrorPipeException : public std::runtime_error
 	{
 	public:
-		ErrorPipeException(DWORD error) :
+		ErrorPipeException() :
 			runtime_error("Pipe error")
 		{
 		}
@@ -46,7 +46,6 @@ namespace CrossIPC
 		{
 		}
 	};
-#endif
 
 	
 	class AnonymousSocket
