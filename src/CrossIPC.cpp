@@ -99,12 +99,54 @@ namespace CrossIPC
 	}
 		
 #elif LINUX
+	AnonymousSocket::AnonymousSocket(const int fd) :
+		m_fd(fd)
+	{
+	}
+	
+	AnonymousSocket::AnonymousSocket(const std::string & sock_string) :
+		m_fd(std::atoi(sock_string.c_str()))
+	{
+	}
+	
+	std::string AnonymousSocket::toString()
+	{
+		std::stringstream ss;
+		ss << m_fd;
+		return ss.str();
+	}
+	
+	std::size_t AnonymousSocket::write(const char* buf, std::size_t len)
+	{
+		std::size_t ret = send(m_fd, buf, len, 0);
+		if (ret == 0) {
+			throw BrokenPipeException();
+		}
+		else if (ret == -1) {
+			throw std::runtime_error("send()");
+		}
+		return ret;
+	}
+
+	std::size_t AnonymousSocket::read(char* buf, std::size_t buf_size)
+	{
+		std::size_t ret = recv(m_fd, buf, buf_size, 0);
+		if (ret == 0) {
+			throw BrokenPipeException();
+		}
+		else if (ret == -1) {
+			throw std::runtime_error("recv()");
+		}
+		return ret;
+	}
 
 #endif
+	
 	void AnonymousSocket::writeString(const std::string & str)
 	{
 		std::size_t ret = write(str.c_str(), str.length());
 	}
+
 	std::string AnonymousSocket::readString()
 	{
 		const std::size_t buf_size = 1024;

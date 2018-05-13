@@ -61,9 +61,9 @@ namespace CrossIPC
 		/*
 		Constructor.
 		Parameters:
-			pipe_string		ref to string
+			sock_string		ref to string
 		*/
-		AnonymousSocket(const std::string & pipe_string);
+		AnonymousSocket(const std::string & sock_string);
 #ifdef WINDOWS
 		/*
 		Constructor.
@@ -73,7 +73,7 @@ namespace CrossIPC
 		*/
 		AnonymousSocket(const HANDLE read_pipe, const HANDLE write_pipe);
 #elif LINUX
-
+		AnonymousSocket(const int fd);
 #endif
 
 		/*
@@ -154,9 +154,8 @@ namespace CrossIPC
 		HANDLE m_read_pipe = NULL;
 		HANDLE m_write_pipe = NULL;
 	#elif LINUX
-		//unix stuff
+		int m_fd;
 	#endif
-
 	};
 
 	using AnonymousSocketPair = std::pair<AnonymousSocket, AnonymousSocket>;

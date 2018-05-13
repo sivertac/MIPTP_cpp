@@ -6,15 +6,13 @@
 namespace RawSock
 {
 #ifdef WINDOWS
+	/*
 	std::vector<std::wstring> getInterfaceNames()
 	{
 		//https://msdn.microsoft.com/en-us/library/windows/desktop/aa365947(v=vs.85).aspx
 		PIP_INTERFACE_INFO info = NULL;
 		ULONG info_buf_len = 0;
 		DWORD ret = 0;
-
-		
-
 		ret = GetInterfaceInfo(NULL, &info_buf_len);
 		if (ret == ERROR_INSUFFICIENT_BUFFER) {
 			info = (IP_INTERFACE_INFO*)std::malloc(info_buf_len);
@@ -40,7 +38,23 @@ namespace RawSock
 
 		return name_vec;
 	}
+	*/
 #elif LINUX
-
+	std::vector<std::string> getInterfaceNames(const std::vector<int> & family_filter)
+	{
+		struct ifaddrs* interface_address;
+		struct ifaddrs* it;
+		if (getifaddrs(&interface_address) == -1) {
+			throw std::runtime_error("getifaddrs()");
+		}
+		std::vector<std::string> ret_vec;
+		while (it != NULL) {
+			if (std::any_of(family_filter.begin(), family_filter.end(), [&](int & i) { return i == it->ifa_addr.sa_family; })) {
+				ret_vec.push_back(it->ifa_name);
+			}
+		}
+		freeifaddrs(interface_address);
+		return ret_vec;
+	}
 #endif
 }
