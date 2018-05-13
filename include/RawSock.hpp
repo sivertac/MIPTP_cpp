@@ -7,8 +7,11 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <array>
 #include <exception>
 #include <algorithm>
+
+#include <string.h>
 
 //platform spesific
 #ifdef WINDOWS
@@ -34,11 +37,46 @@
 #error RawSock.hpp: Not defined target OS
 #endif
 
+//local
+#include "MIPtype.hpp"
+
+
 namespace RawSock
 {
-	class RawSock
-	{
+	static const int ETH_P_MIP = 0x88B5;
 
+	/*
+	MAC address type.
+	*/
+	using MACtype = std::array<char, 6>;
+
+	class MIPRawSock
+	{
+	public:
+		/*
+		Constructor.
+		Parameters:
+			interface_name		name of interface
+			mip					mip address
+		*/
+		MIPRawSock(const std::string & interface_name, MIPtype mip);
+
+		/*
+		Close socket (release resources).
+		Parameters:
+		Return:
+		*/
+		void close();
+
+		/*
+		Send Ethernet frame
+		*/
+
+	private:
+		int m_fd;
+		MIPtype m_mip;
+		MACtype m_mac;
+		struct sockaddr_ll m_sock_address;
 	};
 
 	/*
@@ -50,6 +88,25 @@ namespace RawSock
 	*/
 	std::vector<std::string> getInterfaceNames(const std::vector<int> & family_filter);
 	//std::vector<std::wstring> getInterfaceNames();		//windows uses wide char in kernel :/
+
+	/*
+	Get MAC address of interface.
+	Parameters:
+		fd					socket fd
+		interface_name		name in string
+	Return:
+		MACtype
+	*/
+	MACtype getMacAddress(int fd, const std::string & interface_name);
+
+	/*
+	Set socket to nonblocking.
+	Parameters:
+		fd					file descriptor
+	Return:
+		void
+	*/
+	void setNonBlocking(int fd);
 
 }
 

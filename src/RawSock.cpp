@@ -56,5 +56,53 @@ namespace RawSock
 		freeifaddrs(interface_address);
 		return ret_vec;
 	}
+
+	MACtype getMacAddress(int fd, const std::string & interface_name)
+	{
+		struct ifreq dev;
+		strcpy(dev.ifr_name, interface_name.c_str());
+		if (ioctl(fd, SIOCGIFHWADDR, &dev) == -1) {
+			throw std::runtime_error("ioctl()");
+		}
+		return MACtype(dev.ifr_hwaddr.sa_data);
+	}
+
+	void setNonBlocking(int fd)
+	{
+		int flags;
+		int s;
+		flags = fcntl(fd, F_GETFL, 0);
+		if (flags == -1) {
+			throw std::runtime_error("fcntl()");
+		}
+		flags |= O_NONBLOCK;
+		s = fcntl(fd, F_SETFL, flags);
+		if (s == -1) {
+			throw std::runtime_error("fcntl()");
+		}
+	}
+
+	MIPRawSock::MIPRawSock(const std::string & interface_name, MIPtype mip)
+	{
+		int protocol = htons(ETH_P_MIP);
+		m_mip = mip;
+		m_fd = socket(AF_PACKET, SOCK_RAW, protocol);
+		if (m_fd == -1) {
+			throw std::runtime_error("socket()");
+		}
+		m_mac = getMacAddress(m_fd, interface_name);
+		m_sock_address.sll_family = AF_PACKET;
+		m_sock_address.sll_protocol = protocol;
+		m_sock_address.sll_ifindex = if_nametoindex(interface_name);
+		if (bind(m_fd, (struct sockaddr*)&m_sock_address, sizeof(m_sock_address)) == -1) {
+			throw std::runtime_error("bind()");
+		}
+	}
+
+	void MIPRawSock::close()
+	{
+		close(m_fd);
+	}
+
 #endif
 }
