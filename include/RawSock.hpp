@@ -38,17 +38,12 @@
 #endif
 
 //local
-#include "MIPtype.hpp"
+#include "AddressTypes.hpp"
 
 
 namespace RawSock
 {
 	static const int ETH_P_MIP = 0x88B5;
-
-	/*
-	MAC address type.
-	*/
-	using MACtype = std::array<char, 6>;
 
 	class MIPRawSock
 	{
