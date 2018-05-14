@@ -72,9 +72,9 @@ public:
 	{
 		assert(std::distance(first, last) < 1486);		//frame must be inside 1500 byte
 		if (m_data.size() > 14) {
-			m_data.reserve(14);
+			m_data.resize(14);
 		}
-		m_data.insert(m_data.end(), first, last);
+		m_data.insert(m_data.begin() + 14, first, last);
 		setMsgSize(std::distance(first, last));
 	}
 

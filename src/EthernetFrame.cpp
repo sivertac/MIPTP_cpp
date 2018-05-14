@@ -7,7 +7,6 @@ EthernetFrame::EthernetFrame() :
 	m_msg_size(0),
 	m_data(14)
 {
-	assert(m_data.size() >= 14);
 }
 
 void EthernetFrame::setDest(MACAddress & dest)
@@ -31,6 +30,9 @@ void EthernetFrame::setProtocol(int protocol)
 void EthernetFrame::setMsgSize(std::size_t size)
 {
 	m_msg_size = size;
+	if (m_data.size() - 14 != m_msg_size) {
+		m_data.resize(m_msg_size + 14);
+	}
 }
 
 MACAddress EthernetFrame::getDest()
