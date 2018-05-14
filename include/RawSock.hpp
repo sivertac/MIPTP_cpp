@@ -54,7 +54,7 @@ namespace RawSock
 			interface_name		name of interface
 			mip					mip address
 		*/
-		MIPRawSock(const std::string & interface_name, MIPtype mip);
+		MIPRawSock(const std::string & interface_name, MIPAddress mip);
 
 		/*
 		Close socket (release resources).
@@ -64,13 +64,21 @@ namespace RawSock
 		void close();
 
 		/*
-		Send Ethernet frame
+		Send Ethernet frame with socket.
+		Parameters:
+		Return:
+		*/
+
+		/*
+		Receive Ethernet frame with socket.
+		Parameters:
+		Return:
 		*/
 
 	private:
 		int m_fd;
-		MIPtype m_mip;
-		MACtype m_mac;
+		MIPAddress m_mip;
+		MACAddress m_mac;
 		struct sockaddr_ll m_sock_address;
 	};
 
@@ -92,7 +100,7 @@ namespace RawSock
 	Return:
 		MACtype
 	*/
-	MACtype getMacAddress(int fd, const std::string & interface_name);
+	MACAddress getMacAddress(int fd, const std::string & interface_name);
 
 	/*
 	Set socket to nonblocking.

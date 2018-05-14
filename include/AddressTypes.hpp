@@ -6,16 +6,21 @@
 
 #include <cstdint>
 #include <array>
+#include <string>
+#include <sstream>
 
 /*
 MIP address type.
 */
-using MIPtype = std::uint8_t;
+using MIPAddress = std::uint8_t;
+std::string toStringMIPAddress(const MIPAddress & mip);
+
 
 /*
 MAC address type.
 */
-using MACtype = std::array<std::uint8_t, 6>;
+using MACAddress = std::array<std::uint8_t, 6>;
+std::string toStringMACAddress(const MACAddress & mac);
 
 #endif // !AddressTypes_HEADER
 

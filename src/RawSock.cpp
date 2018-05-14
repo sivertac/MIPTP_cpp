@@ -57,14 +57,14 @@ namespace RawSock
 		return ret_vec;
 	}
 
-	MACtype getMacAddress(int fd, const std::string & interface_name)
+	MACAddress getMacAddress(int fd, const std::string & interface_name)
 	{
 		struct ifreq dev;
 		strcpy(dev.ifr_name, interface_name.c_str());
 		if (ioctl(fd, SIOCGIFHWADDR, &dev) == -1) {
 			throw std::runtime_error("ioctl()");
 		}
-		return MACtype(dev.ifr_hwaddr.sa_data);
+		return MACAddress(dev.ifr_hwaddr.sa_data);
 	}
 
 	void setNonBlocking(int fd)

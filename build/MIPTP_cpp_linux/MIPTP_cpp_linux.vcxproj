@@ -61,9 +61,13 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <ItemGroup>
+    <ClInclude Include="..\..\include\AddressTypes.hpp" />
+    <ClInclude Include="..\..\include\EthernetFrame.hpp" />
     <ClInclude Include="..\..\include\RawSock.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\AddressTypes.cpp" />
+    <ClCompile Include="..\..\src\EthernetFrame.cpp" />
     <ClCompile Include="..\..\src\RawSock.cpp" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">

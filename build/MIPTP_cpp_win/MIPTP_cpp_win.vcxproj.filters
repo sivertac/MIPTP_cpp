@@ -23,7 +23,10 @@
     <ClCompile Include="..\..\src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\RawSock.cpp">
+    <ClCompile Include="..\..\src\EthernetFrame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\AddressTypes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -37,7 +40,10 @@
     <ClInclude Include="..\..\include\EventPoll.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\RawSock.hpp">
+    <ClInclude Include="..\..\include\EthernetFrame.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\AddressTypes.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
