@@ -161,6 +161,60 @@ namespace CrossIPC
 		return ss.str();
 	}
 
+	//LINUX
+	NamedSocket::NamedSocket(std::string & path)
+	{
+		assert(path.size() < sizeof(m_sock_address.sun_path) - 1);
+		m_sock_address.sun_family = AF_UNIX;
+		std::memset(m_sock_address.sun_path, 0, sizeof(m_sock_address.sun_path));
+		std::strcpy(m_sock_address.sun_path, path.c_str());
+		m_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+		if (m_fd == -1) {
+			throw std::runtime_error("socket()");
+		}
+		if (bind(m_fd, (struct sockaddr*)&m_sock_address, sizeof(struct sockaddr_un)) == -1) {
+			throw std::runtime_error("bind()");
+		}
+		if (listen(m_fd, 100) == -1) {
+			throw std::runtime_error("listen()");
+		}
+	}
+
+	AnonymousSocket NamedSocket::acceptConnection()
+	{
+		struct sockaddr_un address;
+		std::memset(&address, 0, sizeof(address));
+		address.sun_family = AF_UNIX;
+		socklen_t address_len = sizeof(address);
+		int accept_fd = accept(m_fd, (struct sockaddr*)&m_sock_address, address_len);
+		if (accept_fd == -1) {
+			throw std::runtime_error("accept()");
+		}
+		return AnonymousSocket(accept_fd);
+	}
+
+	void NamedSocket::close()
+	{
+		close(m_fd);
+		unlink(m_sock_address.sun_path);
+	}
+
+	AnonymousSocket connectToNamedSocket(std::string & path)
+	{
+		assert(name.size() < sizeof(m_sock_address.sun_path) - 1);
+		int connect_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+		if (connect_fd == -1) {
+			throw std::runtime_error("socket()");
+		}
+		struct sockaddr_un address;
+		std::memset(&address, 0, sizeof(address));
+		address.sun_family = AF_UNIX;
+		std::strcpy(address.sun_path, path.c_str());
+		if (connect(connect_fd, (struct sockaddr*)&address, sizeof(address)) == -1) {
+			throw std::runtime_error("connect()");
+		}
+		return AnonymousSocket(connect_fd);
+	}
 }
 
 

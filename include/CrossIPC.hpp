@@ -10,8 +10,9 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cstring>
 #include <exception>
-#include <type_traits>
+#include <cassert>
 
 //platform spesific
 #ifdef WINDOWS
@@ -160,15 +161,51 @@ namespace CrossIPC
 
 	using AnonymousSocketPair = std::pair<AnonymousSocket, AnonymousSocket>;
 	/*
-	Create a AnonymousSocketPair
+	Create a AnonymousSocketPair.
+	Parameters:
+	Return:
+		pair
 	*/
 	AnonymousSocketPair createAnonymousSocketPair();
 
-	/*
+	
 	class NamedSocket
 	{
+	public:
+		/*
+		Constructor.
+		*/
+		NamedSocket(std::string & path);
 
+		/*
+		Accept connection (will block).
+		Parameters:
+		Return:
+			anon socket
+		*/
+		AnonymousSocket acceptConnection();
+
+		/*
+		Close (release resources).
+		Parameters:
+		Return:
+			void
+		*/
+		void close();
+
+	private:
+		int m_fd;
+		struct sockaddr_un m_sock_address;
 	};
+	
+	/*
+	Connect to a named socket.
+	Parameters:
+		path		name of socket
+	Return:
+		anon socket
 	*/
+	AnonymousSocket connectToNamedSocket(std::string & path);
+
 }
 #endif

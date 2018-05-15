@@ -13,59 +13,64 @@
 #include "../include/EthernetFrame.hpp"
 #include "../include/MIPFrame.hpp"
 
-std::string msgToString(std::vector<char> & msg)
-{
-	std::string str;
-	str.insert(str.end(), msg.begin(), msg.end());
-	std::cout << "msg.size(): " << msg.size() << "\n";
-	std::cout << "str.size(): " << str.size() << "\n";
-	return str;
-}
+
 
 int main(int argc, char** argv)
 {	
-	MIPFrame mip_frame1;
-	MIPFrame mip_frame2;
-
-	std::string str1 = "this is str1";
-	std::string str2 = "this is str2";
-	mip_frame1.setMsg(str1.begin(), str1.end());
 	
-	std::cout << "mip_frame1\n";
-	std::cout << mip_frame1.toString() << "\n";
-	
-	auto raw = mip_frame1.getRawBuffer();
-
-	mip_frame2 = MIPFrame(raw.data(), raw.size());
-
-	std::cout << "mip_frame2\n";
-	std::cout << mip_frame2.toString() << "\n";
-
-	EthernetFrame ethernet_frame1;
-	EthernetFrame ethernet_frame2;
-
-	ethernet_frame1.setMsg(str2.begin(), str2.end());
-	
-	MACAddress mac1{ 1, 2, 3, 4, 5, 6 };
-	ethernet_frame1.setDest(mac1);
-
-	std::cout << "ethernet_frame1\n";
-	std::cout << ethernet_frame1.toString() << "\n";
-
-	raw = ethernet_frame1.getRawBuffer();
-
-	ethernet_frame2 = EthernetFrame(raw.data(), raw.size());
-
-	std::cout << "ethernet_frame2\n";
-	std::cout << ethernet_frame2.toString() << "\n";
-
 
 
 
 	return 0;
 }
 
+/*
+std::string msgToString(std::vector<char> & msg)
+{
+std::string str;
+str.insert(str.end(), msg.begin(), msg.end());
+std::cout << "msg.size(): " << msg.size() << "\n";
+std::cout << "str.size(): " << str.size() << "\n";
+return str;
+}
+*/
 
+/*
+MIPFrame mip_frame1;
+MIPFrame mip_frame2;
+
+std::string str1 = "this is str1";
+std::string str2 = "this is str2";
+mip_frame1.setMsg(str1.begin(), str1.end());
+
+std::cout << "mip_frame1\n";
+std::cout << mip_frame1.toString() << "\n";
+
+auto raw = mip_frame1.getRawBuffer();
+
+mip_frame2 = MIPFrame(raw.data(), raw.size());
+
+std::cout << "mip_frame2\n";
+std::cout << mip_frame2.toString() << "\n";
+
+EthernetFrame ethernet_frame1;
+EthernetFrame ethernet_frame2;
+
+ethernet_frame1.setMsg(str2.begin(), str2.end());
+
+MACAddress mac1{ 1, 2, 3, 4, 5, 6 };
+ethernet_frame1.setDest(mac1);
+
+std::cout << "ethernet_frame1\n";
+std::cout << ethernet_frame1.toString() << "\n";
+
+raw = ethernet_frame1.getRawBuffer();
+
+ethernet_frame2 = EthernetFrame(raw.data(), raw.size());
+
+std::cout << "ethernet_frame2\n";
+std::cout << ethernet_frame2.toString() << "\n";
+*/
 
 /*
 std::string msgToString(std::vector<char> & msg)
