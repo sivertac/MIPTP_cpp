@@ -8,18 +8,20 @@
 
 //local
 //#include "../include/RawSock.hpp"			//Uses winsock2.h must be before stuff that uses Windows.h //NEED TO LINK Iphlpapi.lib
-#include "../include/CrossIPC.hpp"
-#include "../include/CrossForkExec.hpp"
-#include "../include/EthernetFrame.hpp"
+//#include "../include/CrossIPC.hpp"
+//#include "../include/CrossForkExec.hpp"
+//#include "../include/EthernetFrame.hpp"
 #include "../include/MIPFrame.hpp"
-
-
 
 int main(int argc, char** argv)
 {	
-	
+	MIPFrame frame;
 
+	std::string str("This is str");
 
+	frame.setMsg(str.begin(), str.end());
+
+	std::cout << frame.toString() << "\n";
 
 	return 0;
 }
