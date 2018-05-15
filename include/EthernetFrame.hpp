@@ -70,7 +70,7 @@ public:
 	template <class InputIt>
 	void setMsg(InputIt first, InputIt last)
 	{
-		assert(std::distance(first, last) < 1486);		//frame must be inside 1500 byte
+		assert(std::distance(first, last) < 1486);		//frame must be <= 1500 byte
 		if (m_data.size() > 14) {
 			m_data.resize(14);
 		}

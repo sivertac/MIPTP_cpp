@@ -4,6 +4,7 @@
 #ifndef MIPFrame_HEADER
 #define MIPFrame_HEADER
 
+#include <iostream>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -20,9 +21,10 @@ class MIPFrame
 public:
 	enum TRA 
 	{
-		T = 0x01,
-		R = 0x02,
-		A = 0x04
+		ZERO = 0b000,
+		T = 0b001,
+		R = 0b010,
+		A = 0b100
 	};
 
 	/*
@@ -37,7 +39,7 @@ public:
 	Return:
 		void
 	*/
-	void setTRA(std::uint8_t tra);
+	void setTRA(int tra);
 
 	/*
 	Set dest address-
@@ -60,13 +62,13 @@ public:
 	/*
 	Set ttl bits.
 	Parameters:
-		ttl		uint8_t where the first 4 bits are relevant
+		ttl		int where the first 4 bits are relevant
 	Return:
 	*/
-	void setTTL(std::uint8_t ttl);
+	void setTTL(int ttl);
 
 	/*
-	Set msg size.
+	Set msg size (size will be rounded up to a number that is divisible by 4.
 	Parameters:
 		size	new size
 	Return:
@@ -93,8 +95,62 @@ public:
 		setMsgSize(std::distance(first, last));
 	}
 
+	/*
+	Get tra.
+	Parameters:
+	Return:
+		tra as int
+	*/
+	int getTRA();
+
+	/*
+	Get dest.
+	Parameters:
+	Return:
+		dest
+	*/
+	MIPAddress getDest();
+
+	/*
+	Get source.
+	Parameters:
+	Return:
+		source
+	*/
+	MIPAddress getSource();
+
+	/*
+	Get ttl.
+	Parameters:
+	Return:
+		ttl as int
+	*/
+	int getTTL();
+
+	/*
+	Get msg size.
+	Parameters:
+	Return:
+		size in bytes
+	*/
+	std::size_t getMsgSize();
+
+	/*
+	Get msg.
+	Parameters:
+	Return:
+		msg
+	*/
+	std::vector<char> getMsg();
+
+	/*
+	To string (for testing).
+	Parameters:
+	Return:
+		string
+	*/
+	std::string toString();
 private:
-	std::size_t m_msg_size;
 	std::vector<char> m_data;	//must be 4 byte or bigger
 };
 

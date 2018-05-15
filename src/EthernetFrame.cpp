@@ -68,7 +68,7 @@ std::vector<char> EthernetFrame::getMsg()
 {
 	assert(m_data.size() >= 14);
 	if (m_msg_size > 0) {
-		return std::vector<char>(m_data.begin() + 14, m_data.begin() + m_msg_size);
+		return std::vector<char>(m_data.begin() + 14, m_data.begin() + 14 + m_msg_size);
 	}
 	else {
 		return std::vector<char>();
