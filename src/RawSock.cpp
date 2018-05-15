@@ -82,7 +82,7 @@ namespace RawSock
 		}
 	}
 
-	MIPRawSock::MIPRawSock(const std::string & interface_name, MIPtype mip)
+	MIPRawSock::MIPRawSock(const std::string & interface_name, MIPAddress mip)
 	{
 		int protocol = htons(ETH_P_MIP);
 		m_mip = mip;

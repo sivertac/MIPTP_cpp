@@ -33,6 +33,20 @@ public:
 	MIPFrame();
 
 	/*
+	Constructor.
+	Construct from buffer.
+	*/
+	MIPFrame(char* buf, std::size_t size);
+
+	/*
+	Get raw buffer.
+	Parameters:
+	Return:
+	vector holding buffer
+	*/
+	std::vector<char> getRawBuffer();
+
+	/*
 	Set TRA bits.
 	Parameters:
 		tra		uint8_t where the first 3 bits are relevant

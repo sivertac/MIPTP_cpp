@@ -9,6 +9,21 @@ EthernetFrame::EthernetFrame() :
 {
 }
 
+EthernetFrame::EthernetFrame(char* buf, std::size_t size)
+{
+	assert(size >= 14);
+	if (m_data.size() != size) {
+		m_data.resize(size);
+	}
+	std::memcpy(m_data.data(), buf, size);
+	m_msg_size = size - 14;
+}
+
+std::vector<char> EthernetFrame::getRawBuffer()
+{
+	return std::vector<char>(m_data);
+}
+
 void EthernetFrame::setDest(MACAddress & dest)
 {
 	assert(m_data.size() >= 14);

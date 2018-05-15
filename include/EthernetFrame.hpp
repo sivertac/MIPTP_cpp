@@ -24,6 +24,20 @@ public:
 	EthernetFrame();
 
 	/*
+	Constructor.
+	Construct from buffer.
+	*/
+	EthernetFrame(char* buf, std::size_t size);
+
+	/*
+	Get raw buffer.
+	Parameters:
+	Return:
+		vector holding buffer
+	*/
+	std::vector<char> getRawBuffer();
+
+	/*
 	Set dest.
 	Parameters:
 		dest		dest address

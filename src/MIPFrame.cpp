@@ -8,6 +8,20 @@ MIPFrame::MIPFrame() :
 {
 }
 
+MIPFrame::MIPFrame(char * buf, std::size_t size)
+{
+	assert(size >= 4);
+	if (m_data.size() != size) {
+		m_data.resize(size);
+	}
+	std::memcpy(m_data.data(), buf, size);
+}
+
+std::vector<char> MIPFrame::getRawBuffer()
+{
+	return std::vector<char>(m_data);
+}
+
 void MIPFrame::setTRA(int tra)
 {
 	const unsigned long int mask = 0b111;	//C++14
