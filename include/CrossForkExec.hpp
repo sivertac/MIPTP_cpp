@@ -9,8 +9,10 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <string.h>
 #include <vector>
 #include <exception>
+#include <stdexcept>
 //#include <memory>
 
 #include <string.h>
@@ -23,6 +25,10 @@
 
 #elif LINUX
 //unix stuff
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
 #else
 //error
 #error CrossForkExec.hpp: Not defined target OS
@@ -44,29 +50,42 @@ namespace CrossForkExec
 	class ChildProcess
 	{
 	public:
-		/*
-		Constructor
-		*/
 #ifdef WINDOWS
+		/*
+		Constructor.
+		Paremters:
+			pi
+		*/
 		ChildProcess(const PROCESS_INFORMATION & pi);
 #elif LINUX
-
+		/*
+		Constructor.
+		Parameters:
+			process_id
+		*/
+		ChildProcess(const pid_t & process_id);
 #endif
 
 		/*
-		Join child prosess
+		Join child prosess.
+		Parameters:
+		Return:
+			void
 		*/
 		void join();
 
 		/*
-		Close ChildProcess (close the handlers)
+		Close ChildProcess (close the handlers).
+		Parameters:
+		Return:
+			void
 		*/
-		void close();
+		void closeResources();
 	private:
 #ifdef WINDOWS
 		PROCESS_INFORMATION m_process_information;
 #elif LINUX
-
+		pid_t m_process_id;
 #endif
 	};
 	

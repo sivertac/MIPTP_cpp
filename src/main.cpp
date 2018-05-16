@@ -9,21 +9,36 @@
 //local
 //#include "../include/RawSock.hpp"			//Uses winsock2.h must be before stuff that uses Windows.h //NEED TO LINK Iphlpapi.lib
 //#include "../include/CrossIPC.hpp"
-//#include "../include/CrossForkExec.hpp"
+#include "../include/CrossForkExec.hpp"
 //#include "../include/EthernetFrame.hpp"
 #include "../include/MIPFrame.hpp"
 
 int main(int argc, char** argv)
 {	
-	MIPFrame frame;
+	if (argc > 1) {
+		std::cout << "Hello from child\n";
+		std::cout << "Child waiting for 1 sec\n";
+		sleep(1);
+		std::cout << "Child termenating\n";
+		return 0;
+	}
+	else {
+		std::cout << "Hello from parent\n";
+		std::cout << "Parent spawning child\n";
 
-	std::string str("This is str");
+		std::string program_path("./main");
+		std::vector<std::string> program_args{ std::string("fuck") };
 
-	frame.setMsg(str.begin(), str.end());
+		auto child = CrossForkExec::forkExec(program_path, program_args);
 
-	std::cout << frame.toString() << "\n";
+		std::cout << "Parent joining child\n";
+		child.join();
 
-	return 0;
+		std::cout << "Parent terminating\n";
+		child.closeResources();
+
+		return 0;
+	}
 }
 
 /*

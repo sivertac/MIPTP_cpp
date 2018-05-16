@@ -16,7 +16,7 @@ namespace CrossForkExec
 		WaitForSingleObject(m_process_information.hProcess, INFINITE);
 	}
 
-	void ChildProcess::close()
+	void ChildProcess::closeResources()
 	{
 		CloseHandle(m_process_information.hProcess);
 		CloseHandle(m_process_information.hThread);
@@ -66,6 +66,46 @@ namespace CrossForkExec
 	}
 
 #elif LINUX
+	
+	ChildProcess::ChildProcess(const pid_t & process_id) :
+		m_process_id(process_id)
+	{
+	}
+	
+	void ChildProcess::join()
+	{
+		int status;
+		if (waitpid(m_process_id, &status, 0) == -1) {
+			throw std::runtime_error("wairpid()");
+		}
+	}
 
+	void ChildProcess::closeResources() {
+		close(m_process_id);
+	}
+
+	ChildProcess forkExec(const std::string & program_path, const std::vector<std::string> & program_args)
+	{
+		pid_t process_id = fork();
+		if (process_id == -1) {
+			throw std::runtime_error("fork()");
+		}
+		else if (process_id == 0) {
+			char** argv = (char**)std::malloc((program_args.size() + 2) * sizeof(char*));
+			if (argv == NULL) {
+				throw std::runtime_error("malloc()");
+			}
+			argv[0] = strdup(program_path.c_str());
+			for (std::size_t i = 0; i < program_args.size(); ++i) {
+				argv[i + 1] = strdup(program_args[i].c_str());
+			}
+			argv[program_args.size() + 1] = NULL;
+			if (execvp(argv[0], argv) == -1) {
+				throw std::runtime_error("execvp()");
+			}
+			// -> child should not come here <-
+		}
+		return ChildProcess(process_id);
+	}
 #endif
 }
