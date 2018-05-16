@@ -7,19 +7,29 @@
 #include <string>
 
 //local
-#include "../include/RawSock.hpp"
-#include "../include/CrossIPC.hpp"
-#include "../include/CrossForkExec.hpp"
-//#include "../include/EthernetFrame.hpp"
-#include "../include/MIPFrame.hpp"
+//#include "../include/RawSock.hpp"
+//#include "../include/CrossIPC.hpp"
+//#include "../include/CrossForkExec.hpp"
+#include "../include/EthernetFrame.hpp"
+//#include "../include/MIPFrame.hpp"
 
 int main(int argc, char** argv)
 {
+	/*
 	auto inter = RawSock::getInterfaceNames(std::vector<int>{ AF_PACKET });
-
 	for (auto & s : inter) {
 		std::cout << s << "\n";
 	}
+	*/
+
+	EthernetFrame frame;
+
+	std::string str("THIS IS A STIRNG");
+	frame.setMsg(str.begin(), str.end());
+
+	std::cout << frame.getSize() << "\n";
+
+
 
 	return 0;
 }

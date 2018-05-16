@@ -4,7 +4,7 @@
 CC = g++
 FLAGS = -Wall -Werror -std=c++11 -DLINUX
 
-FILES = main MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o
+FILES =	main MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o
 
 all: $(FILES)
 
@@ -20,8 +20,11 @@ CrossForkExec.o: src/CrossForkExec.cpp include/CrossForkExec.hpp
 CrossIPC.o: src/CrossIPC.cpp include/CrossIPC.hpp
 	$(CC) $(FLAGS) -c src/CrossIPC.cpp
 
-RawSock.o: src/RawSock.cpp include/RawSock.hpp AddressTypes.o
-	$(CC) $(FLAGS) -c src/RawSock.cpp AddressTypes.o
+RawSock.o: src/RawSock.cpp include/RawSock.hpp EthernetFrame.o
+	$(CC) $(FLAGS) -c src/RawSock.cpp EthernetFrame.o
+
+EthernetFrame.o: src/EthernetFrame.cpp include/EthernetFrame.hpp AddressTypes.o
+	$(CC) $(FLAGS) -c src/EthernetFrame.cpp AddressTypes.o
 
 AddressTypes.o: src/AddressTypes.cpp include/AddressTypes.hpp
 	$(CC) $(FLAGS) -c src/AddressTypes.cpp

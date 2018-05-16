@@ -41,7 +41,7 @@
 #endif
 
 //local
-#include "AddressTypes.hpp"
+#include "EthernetFrame.hpp"
 
 namespace RawSock
 {
@@ -66,16 +66,20 @@ namespace RawSock
 		void closeResources();
 
 		/*
-		Send Ethernet frame with socket.
+		Send Ethernet frame with socket (this will not modify the frame).
 		Parameters:
+			frame		frame to send
 		Return:
 		*/
+		void sendEthernetFrame(EthernetFrame & frame);
 
 		/*
 		Receive Ethernet frame with socket.
 		Parameters:
 		Return:
+			received frame
 		*/
+		EthernetFrame recvEthernetFrame();
 
 	private:
 		int m_fd;

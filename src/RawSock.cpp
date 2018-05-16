@@ -109,5 +109,23 @@ namespace RawSock
 		close(m_fd);
 	}
 
+	void MIPRawSock::sendEthernetFrame(EthernetFrame & frame)
+	{
+		ssize_t ret = send(m_fd, frame.getData(), frame.getSize(), 0);
+		if (ret == -1) {
+			throw std::runtime_error("send()");
+		}
+	}
+
+	EthernetFrame MIPRawSock::recvEthernetFrame()
+	{
+		char buf[1514];
+		ssize_t ret = recv(m_fd, buf, 1514, 0);
+		if (ret == -1) {
+			throw std::runtime_error("recv()");
+		}
+		return EthernetFrame(buf, static_cast<std::size_t>(ret));
+	}
+
 #endif
 }

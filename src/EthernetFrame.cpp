@@ -19,11 +19,6 @@ EthernetFrame::EthernetFrame(char* buf, std::size_t size)
 	m_msg_size = size - 14;
 }
 
-std::vector<char> EthernetFrame::getRawBuffer()
-{
-	return std::vector<char>(m_data);
-}
-
 void EthernetFrame::setDest(MACAddress & dest)
 {
 	assert(m_data.size() >= 14);
@@ -93,6 +88,11 @@ std::vector<char> EthernetFrame::getMsg()
 std::size_t EthernetFrame::getSize()
 {
 	return m_msg_size + 14;
+}
+
+char* EthernetFrame::getData()
+{
+	return m_data.data();
 }
 
 std::string EthernetFrame::toString()

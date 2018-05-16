@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+#include <cstddef>
 
 #include "AddressTypes.hpp"
 
@@ -28,14 +29,6 @@ public:
 	Construct from buffer.
 	*/
 	EthernetFrame(char* buf, std::size_t size);
-
-	/*
-	Get raw buffer.
-	Parameters:
-	Return:
-		vector holding buffer
-	*/
-	std::vector<char> getRawBuffer();
 
 	/*
 	Set dest.
@@ -139,6 +132,14 @@ public:
 		size
 	*/
 	std::size_t getSize();
+
+	/*
+	Get raw buffer.
+	Parameters:
+	Return:
+		pointer to raw data of frame
+	*/
+	char* getData();
 
 	/*
 	To string (for testing).
