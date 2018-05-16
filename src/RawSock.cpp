@@ -42,18 +42,20 @@ namespace RawSock
 #elif LINUX
 	std::vector<std::string> getInterfaceNames(const std::vector<int> & family_filter)
 	{
-		struct ifaddrs* interface_address;
+		struct ifaddrs* start_it;
 		struct ifaddrs* it;
-		if (getifaddrs(&interface_address) == -1) {
+		if (getifaddrs(&start_it) == -1) {
 			throw std::runtime_error("getifaddrs()");
 		}
 		std::vector<std::string> ret_vec;
+		it = start_it;
 		while (it != NULL) {
-			if (std::any_of(family_filter.begin(), family_filter.end(), [&](int & i) { return i == it->ifa_addr.sa_family; })) {
+			if (std::any_of(family_filter.begin(), family_filter.end(), [&](const int & i) { return i == it->ifa_addr->sa_family; })) {
 				ret_vec.push_back(it->ifa_name);
 			}
+			it = it->ifa_next;
 		}
-		freeifaddrs(interface_address);
+		freeifaddrs(start_it);
 		return ret_vec;
 	}
 
@@ -64,7 +66,10 @@ namespace RawSock
 		if (ioctl(fd, SIOCGIFHWADDR, &dev) == -1) {
 			throw std::runtime_error("ioctl()");
 		}
-		return MACAddress(dev.ifr_hwaddr.sa_data);
+
+		MACAddress mac;
+		std::memcpy(mac.data(), dev.ifr_hwaddr.sa_data, 6);
+		return mac;
 	}
 
 	void setNonBlocking(int fd)
@@ -93,13 +98,13 @@ namespace RawSock
 		m_mac = getMacAddress(m_fd, interface_name);
 		m_sock_address.sll_family = AF_PACKET;
 		m_sock_address.sll_protocol = protocol;
-		m_sock_address.sll_ifindex = if_nametoindex(interface_name);
+		m_sock_address.sll_ifindex = if_nametoindex(interface_name.c_str());
 		if (bind(m_fd, (struct sockaddr*)&m_sock_address, sizeof(m_sock_address)) == -1) {
 			throw std::runtime_error("bind()");
 		}
 	}
 
-	void MIPRawSock::close()
+	void MIPRawSock::closeResources()
 	{
 		close(m_fd);
 	}

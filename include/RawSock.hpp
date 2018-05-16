@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <array>
 #include <exception>
@@ -24,6 +25,8 @@
 #include <Windows.h>
 #elif LINUX
 //unix stuff
+#include <unistd.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <arpa/inet.h>
@@ -39,7 +42,6 @@
 
 //local
 #include "AddressTypes.hpp"
-
 
 namespace RawSock
 {
@@ -61,7 +63,7 @@ namespace RawSock
 		Parameters:
 		Return:
 		*/
-		void close();
+		void closeResources();
 
 		/*
 		Send Ethernet frame with socket.

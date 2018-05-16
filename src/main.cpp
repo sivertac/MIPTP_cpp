@@ -7,12 +7,26 @@
 #include <string>
 
 //local
-//#include "../include/RawSock.hpp"			//Uses winsock2.h must be before stuff that uses Windows.h //NEED TO LINK Iphlpapi.lib
+#include "../include/RawSock.hpp"
 #include "../include/CrossIPC.hpp"
 #include "../include/CrossForkExec.hpp"
 //#include "../include/EthernetFrame.hpp"
 #include "../include/MIPFrame.hpp"
 
+int main(int argc, char** argv)
+{
+	auto inter = RawSock::getInterfaceNames(std::vector<int>{ AF_PACKET });
+
+	for (auto & s : inter) {
+		std::cout << s << "\n";
+	}
+
+	return 0;
+}
+
+
+
+/*
 int main(int argc, char** argv)
 {	
 	if (argc > 1) {
@@ -65,6 +79,7 @@ int main(int argc, char** argv)
 		return 0;
 	}
 }
+*/
 
 /*
 std::string msgToString(std::vector<char> & msg)
