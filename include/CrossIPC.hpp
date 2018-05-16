@@ -12,6 +12,7 @@
 #include <string>
 #include <cstring>
 #include <exception>
+#include <stdexcept>
 #include <cassert>
 
 //platform spesific
@@ -19,11 +20,11 @@
 //windows stuff
 //https://msdn.microsoft.com/en-us/library/windows/desktop/ms682499(v=vs.85).aspx
 #include <Windows.h>
-
 #elif LINUX
 //unix stuff
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <unistd.h>
 #else
 //error
 	#error CrossIPC.hpp: Not defined target OS
@@ -129,7 +130,7 @@ namespace CrossIPC
 		Return:	
 			void
 		*/
-		void close();
+		void closeResources();
 
 		template <typename T>
 		friend AnonymousSocket & operator<<(AnonymousSocket & sock, const T & source)
@@ -191,7 +192,7 @@ namespace CrossIPC
 		Return:
 			void
 		*/
-		void close();
+		void closeResources();
 
 	private:
 		int m_fd;

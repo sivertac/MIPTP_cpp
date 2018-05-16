@@ -8,7 +8,7 @@
 
 //local
 //#include "../include/RawSock.hpp"			//Uses winsock2.h must be before stuff that uses Windows.h //NEED TO LINK Iphlpapi.lib
-//#include "../include/CrossIPC.hpp"
+#include "../include/CrossIPC.hpp"
 #include "../include/CrossForkExec.hpp"
 //#include "../include/EthernetFrame.hpp"
 #include "../include/MIPFrame.hpp"
@@ -17,24 +17,49 @@ int main(int argc, char** argv)
 {	
 	if (argc > 1) {
 		std::cout << "Hello from child\n";
-		std::cout << "Child waiting for 1 sec\n";
-		sleep(1);
+		CrossIPC::AnonymousSocket parent_sock(argv[1]);
+		
+		std::string str1("This is str1 from child\n");
+		std::cout << "Child sending msg from parent, size: " << str1.size() << "str:" << str1 << "\n";
+		parent_sock.writeString(str1);
+
+		std::cout << "Child waiting for reply\n";
+		std::string str2 = parent_sock.readString();
+		std::cout << "Child received msg from parent, size: " << str2.size() << "str:" << str2 << "\n";
+		
 		std::cout << "Child termenating\n";
+		parent_sock.closeResources();
+
 		return 0;
 	}
 	else {
 		std::cout << "Hello from parent\n";
+		
+		std::cout << "Parent creating anon sock pair\n";
+		auto pair = CrossIPC::createAnonymousSocketPair();
+		auto & child_sock = pair.first;
+
 		std::cout << "Parent spawning child\n";
-
 		std::string program_path("./main");
-		std::vector<std::string> program_args{ std::string("fuck") };
-
+		std::vector<std::string> program_args{ pair.second.toString() };
 		auto child = CrossForkExec::forkExec(program_path, program_args);
+		pair.second.closeResources();
+
+		std::cout << "Parent waiting for msg from child\n";
+		std::string str1 = child_sock.readString();
+		std::cout << "Parent received msg from parent, size: " << str1.size() << "str:" << str1 << "\n";
+		
+
+		std::string str2("This is str1 from child\n");
+		std::cout << "Parent sending msg from child, size: " << str2.size() << "str:" << str2 << "\n";
+		child_sock.writeString(str2);
+
 
 		std::cout << "Parent joining child\n";
 		child.join();
 
 		std::cout << "Parent terminating\n";
+		child_sock.closeResources();
 		child.closeResources();
 
 		return 0;
