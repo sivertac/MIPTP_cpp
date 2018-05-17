@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\include\EventPoll.cpp" />
     <ClCompile Include="..\..\src\CrossForkExec.cpp" />
     <ClCompile Include="..\..\src\CrossIPC.cpp" />
     <ClCompile Include="..\..\src\test_child.cpp" />

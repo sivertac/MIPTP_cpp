@@ -123,7 +123,7 @@ namespace CrossIPC
 			throw BrokenPipeException();
 		}
 		else if (ret == -1) {
-			throw std::runtime_error("send()");
+			throw LinuxException::Error("send()");
 		}
 		return static_cast<std::size_t>(ret);
 	}
@@ -135,7 +135,7 @@ namespace CrossIPC
 			throw BrokenPipeException();
 		}
 		else if (ret == -1) {
-			throw std::runtime_error("recv()");
+			throw LinuxException::Error("recv()");
 		}
 		return static_cast<std::size_t>(ret);
 	}
@@ -149,7 +149,7 @@ namespace CrossIPC
 	{
 		int fd_pair[2];
 		if (socketpair(AF_UNIX, SOCK_STREAM, 0, fd_pair) == -1) {
-			throw std::runtime_error("socketpair()");
+			throw LinuxException::Error("socketpair()");
 		}
 		return AnonymousSocketPair(AnonymousSocket(fd_pair[0]), AnonymousSocket(fd_pair[1]));
 	}
@@ -184,13 +184,13 @@ namespace CrossIPC
 		std::strcpy(m_sock_address.sun_path, path.c_str());
 		m_fd = socket(AF_UNIX, SOCK_STREAM, 0);
 		if (m_fd == -1) {
-			throw std::runtime_error("socket()");
+			throw LinuxException::Error("socket()");
 		}
 		if (bind(m_fd, (struct sockaddr*)&m_sock_address, sizeof(struct sockaddr_un)) == -1) {
-			throw std::runtime_error("bind()");
+			throw LinuxException::Error("bind()");
 		}
 		if (listen(m_fd, 100) == -1) {
-			throw std::runtime_error("listen()");
+			throw LinuxException::Error("listen()");
 		}
 	}
 
@@ -202,7 +202,7 @@ namespace CrossIPC
 		socklen_t address_len = sizeof(address);
 		int accept_fd = accept(m_fd, (struct sockaddr*)&m_sock_address, &address_len);
 		if (accept_fd == -1) {
-			throw std::runtime_error("accept()");
+			throw LinuxException::Error("accept()");
 		}
 		return AnonymousSocket(accept_fd);
 	}
@@ -219,13 +219,13 @@ namespace CrossIPC
 		assert(path.size() < sizeof(address.sun_path) - 1);
 		int connect_fd = socket(AF_UNIX, SOCK_STREAM, 0);
 		if (connect_fd == -1) {
-			throw std::runtime_error("socket()");
+			throw LinuxException::Error("socket()");
 		}
 		std::memset(&address, 0, sizeof(address));
 		address.sun_family = AF_UNIX;
 		std::strcpy(address.sun_path, path.c_str());
 		if (connect(connect_fd, (struct sockaddr*)&address, sizeof(address)) == -1) {
-			throw std::runtime_error("connect()");
+			throw LinuxException::Error("connect()");
 		}
 		return AnonymousSocket(connect_fd);
 	}

@@ -24,6 +24,9 @@
     <ClCompile Include="..\..\src\CrossForkExec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\include\EventPoll.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\EventPoll.hpp">

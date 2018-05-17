@@ -29,6 +29,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "LinuxException.hpp"
+
 #else
 //error
 #error CrossForkExec.hpp: Not defined target OS

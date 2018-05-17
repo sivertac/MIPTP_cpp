@@ -70,37 +70,51 @@
     <RemoteBuildCommandLine>make</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>make all</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>make clean</RemoteCleanCommandLine>
+    <NMakeIncludeSearchPath>
+    </NMakeIncludeSearchPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <RemoteBuildCommandLine>make</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>make all</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>make clean</RemoteCleanCommandLine>
+    <NMakeIncludeSearchPath>
+    </NMakeIncludeSearchPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <RemoteBuildCommandLine>make</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>make all</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>make clean</RemoteCleanCommandLine>
+    <NMakeIncludeSearchPath>
+    </NMakeIncludeSearchPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <RemoteBuildCommandLine>make</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>make all</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>make clean</RemoteCleanCommandLine>
+    <NMakeIncludeSearchPath>
+    </NMakeIncludeSearchPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <RemoteBuildCommandLine>make</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>make all</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>make clean</RemoteCleanCommandLine>
+    <NMakeIncludeSearchPath>
+    </NMakeIncludeSearchPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <RemoteBuildCommandLine>make</RemoteBuildCommandLine>
     <RemoteReBuildCommandLine>make all</RemoteReBuildCommandLine>
     <RemoteCleanCommandLine>make clean</RemoteCleanCommandLine>
+    <NMakeIncludeSearchPath>
+    </NMakeIncludeSearchPath>
   </PropertyGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\AddressTypes.hpp" />
     <ClInclude Include="..\..\include\CrossForkExec.hpp" />
     <ClInclude Include="..\..\include\CrossIPC.hpp" />
     <ClInclude Include="..\..\include\EthernetFrame.hpp" />
+    <ClInclude Include="..\..\include\EventPoll.hpp" />
+    <ClInclude Include="..\..\include\LinuxException.hpp" />
     <ClInclude Include="..\..\include\MIPFrame.hpp" />
     <ClInclude Include="..\..\include\RawSock.hpp" />
   </ItemGroup>
@@ -109,8 +123,11 @@
     <ClCompile Include="..\..\src\CrossForkExec.cpp" />
     <ClCompile Include="..\..\src\CrossIPC.cpp" />
     <ClCompile Include="..\..\src\EthernetFrame.cpp" />
+    <ClCompile Include="..\..\src\EventPoll.cpp" />
+    <ClCompile Include="..\..\src\LinuxException.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
     <ClCompile Include="..\..\src\MIPFrame.cpp" />
+    <ClCompile Include="..\..\src\MIP_deamon.cpp" />
     <ClCompile Include="..\..\src\RawSock.cpp" />
   </ItemGroup>
   <ItemGroup>

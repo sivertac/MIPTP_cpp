@@ -25,6 +25,9 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+
+#include "LinuxException.hpp"
+
 #else
 //error
 	#error CrossIPC.hpp: Not defined target OS
@@ -35,20 +38,6 @@ namespace CrossIPC
 	class BrokenPipeException : public std::exception
 	{
 	};
-
-	class ErrorPipeException : public std::runtime_error
-	{
-	public:
-		ErrorPipeException() :
-			runtime_error("Pipe error")
-		{
-		}
-		ErrorPipeException(std::string error) :
-			runtime_error(error)
-		{
-		}
-	};
-
 	
 	class AnonymousSocket
 	{

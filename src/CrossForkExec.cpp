@@ -76,7 +76,7 @@ namespace CrossForkExec
 	{
 		int status;
 		if (waitpid(m_process_id, &status, 0) == -1) {
-			throw std::runtime_error("wairpid()");
+			throw LinuxException::Error("wairpid()");
 		}
 	}
 
@@ -88,12 +88,12 @@ namespace CrossForkExec
 	{
 		pid_t process_id = fork();
 		if (process_id == -1) {
-			throw std::runtime_error("fork()");
+			throw LinuxException::Error("fork()");
 		}
 		else if (process_id == 0) {
 			char** argv = (char**)std::malloc((program_args.size() + 2) * sizeof(char*));
 			if (argv == NULL) {
-				throw std::runtime_error("malloc()");
+				throw LinuxException::Error("malloc()");
 			}
 			argv[0] = strdup(program_path.c_str());
 			for (std::size_t i = 0; i < program_args.size(); ++i) {
@@ -101,7 +101,7 @@ namespace CrossForkExec
 			}
 			argv[program_args.size() + 1] = NULL;
 			if (execvp(argv[0], argv) == -1) {
-				throw std::runtime_error("execvp()");
+				throw LinuxException::Error("execvp()");
 			}
 			// -> child should not come here <-
 		}

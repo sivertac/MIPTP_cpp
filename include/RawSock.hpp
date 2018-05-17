@@ -41,6 +41,7 @@
 #endif
 
 //local
+#include "LinuxException.hpp"
 #include "EthernetFrame.hpp"
 
 namespace RawSock

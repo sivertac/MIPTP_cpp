@@ -45,7 +45,7 @@ namespace RawSock
 		struct ifaddrs* start_it;
 		struct ifaddrs* it;
 		if (getifaddrs(&start_it) == -1) {
-			throw std::runtime_error("getifaddrs()");
+			throw LinuxException::Error("getifaddrs()");
 		}
 		std::vector<std::string> ret_vec;
 		it = start_it;
@@ -64,7 +64,7 @@ namespace RawSock
 		struct ifreq dev;
 		strcpy(dev.ifr_name, interface_name.c_str());
 		if (ioctl(fd, SIOCGIFHWADDR, &dev) == -1) {
-			throw std::runtime_error("ioctl()");
+			throw LinuxException::Error("ioctl()");
 		}
 
 		MACAddress mac;
@@ -78,12 +78,12 @@ namespace RawSock
 		int s;
 		flags = fcntl(fd, F_GETFL, 0);
 		if (flags == -1) {
-			throw std::runtime_error("fcntl()");
+			throw LinuxException::Error("fcntl()");
 		}
 		flags |= O_NONBLOCK;
 		s = fcntl(fd, F_SETFL, flags);
 		if (s == -1) {
-			throw std::runtime_error("fcntl()");
+			throw LinuxException::Error("fcntl()");
 		}
 	}
 
@@ -93,14 +93,14 @@ namespace RawSock
 		m_mip = mip;
 		m_fd = socket(AF_PACKET, SOCK_RAW, protocol);
 		if (m_fd == -1) {
-			throw std::runtime_error("socket()");
+			throw LinuxException::Error("socket()");
 		}
 		m_mac = getMacAddress(m_fd, interface_name);
 		m_sock_address.sll_family = AF_PACKET;
 		m_sock_address.sll_protocol = protocol;
 		m_sock_address.sll_ifindex = if_nametoindex(interface_name.c_str());
 		if (bind(m_fd, (struct sockaddr*)&m_sock_address, sizeof(m_sock_address)) == -1) {
-			throw std::runtime_error("bind()");
+			throw LinuxException::Error("bind()");
 		}
 	}
 
@@ -113,7 +113,7 @@ namespace RawSock
 	{
 		ssize_t ret = send(m_fd, frame.getData(), frame.getSize(), 0);
 		if (ret == -1) {
-			throw std::runtime_error("send()");
+			throw LinuxException::Error("send()");
 		}
 	}
 
@@ -122,7 +122,7 @@ namespace RawSock
 		char buf[1514];
 		ssize_t ret = recv(m_fd, buf, 1514, 0);
 		if (ret == -1) {
-			throw std::runtime_error("recv()");
+			throw LinuxException::Error("recv()");
 		}
 		return EthernetFrame(buf, static_cast<std::size_t>(ret));
 	}
