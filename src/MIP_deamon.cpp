@@ -65,14 +65,10 @@ int main(int argc, char** argv)
 		std::cerr << "Too few args\n";
 		return EXIT_FAILURE;
 	}
-
-	//signal
-	struct sigaction sa;
-	sa.sa_handler = &sigintHandler;
-	if (sigaction(SIGINT, &sa, NULL) == -1) {
-		throw LinuxException::Error("sigaction()");
-	}
-
+	
+	//Connect transport deamon
+	//TODO
+	
 	//Make MIPRawSock
 	{
 		std::vector<MIPAddress> mip_vec;
@@ -82,10 +78,23 @@ int main(int argc, char** argv)
 		initRawSock(mip_vec);
 	}
 
-
+	//signal
+	struct sigaction sa;
+	sa.sa_handler = &sigintHandler;
+	if (sigaction(SIGINT, &sa, NULL) == -1) {
+		throw LinuxException::Error("sigaction()");
+	}
+	
+	
+	//epoll
+	EventPoll epoll;
+	
+	for (auto & sock : raw_sock_vec) {
+		epoll.addFriend<RawSock::MIPRawSock>(sock);
+	}
 
 	std::cout << "raw_sock_vec.size(): " << raw_sock_vec.size() << "\n";
-
+	
 	return EXIT_SUCCESS;
 }
 

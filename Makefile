@@ -4,20 +4,23 @@
 CC = g++
 FLAGS = -Wall -Werror -std=c++11 -DLINUX
 
-FILES =	main MIP_deamon MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o 
+FILES =	main MIP_deamon MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o EventPoll.o
 
 all: $(FILES)
 
 #binary
-main: src/main.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o
-	$(CC) $(FLAGS) -o main src/main.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o
+main: src/main.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o EventPoll.o
+	$(CC) $(FLAGS) -o main src/main.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o EventPoll.o
 
-MIP_deamon: src/MIP_deamon.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o
-	$(CC) $(FLAGS) -o MIP_deamon src/MIP_deamon.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o
+MIP_deamon: src/MIP_deamon.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o EventPoll.o
+	$(CC) $(FLAGS) -o MIP_deamon src/MIP_deamon.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o EventPoll.o
 
-#obljects
+#objects
 MIPFrame.o: src/MIPFrame.cpp include/MIPFrame.hpp
 	$(CC) $(FLAGS) -c src/MIPFrame.cpp
+
+EventPoll.o: src/EventPoll.cpp include/EventPoll.hpp
+	$(CC) $(FLAGS) -c  src/EventPoll.cpp
 
 CrossForkExec.o: src/CrossForkExec.cpp include/CrossForkExec.hpp
 	$(CC) $(FLAGS) -c src/CrossForkExec.cpp

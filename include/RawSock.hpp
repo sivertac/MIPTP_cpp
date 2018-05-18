@@ -45,12 +45,18 @@
 
 //local
 #include "EthernetFrame.hpp"
+#include "EventPoll.hpp"
 
 namespace RawSock
 {
 	class MIPRawSock
 	{
 	public:
+		/*
+		const
+		*/
+		static const int ETH_P_MIP = 0x88B5;	//MIP protocol
+
 		/*
 		Constructor.
 		Parameters:
@@ -83,16 +89,13 @@ namespace RawSock
 			void
 		*/
 		void recvEthernetFrame(EthernetFrame & frame);
-
-		/*
-		const
-		*/
-		static const int ETH_P_MIP = 0x88B5;				//MIP protocol
 	private:
 		int m_fd;
 		MIPAddress m_mip;
 		MACAddress m_mac;
 		struct sockaddr_ll m_sock_address;
+
+		friend class ::EventPoll;
 	};
 
 	/*
