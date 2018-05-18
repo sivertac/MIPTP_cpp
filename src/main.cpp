@@ -23,8 +23,6 @@ int main(int argc, char** argv)
 	RawSock::MIPRawSock raw_sock(inter.back(), 1);
 	
 
-
-
 	return 0;
 }
 

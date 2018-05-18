@@ -35,19 +35,19 @@
 #include <linux/if_packet.h>
 #include <net/ethernet.h>
 #include <ifaddrs.h>
+
+#include "LinuxException.hpp"
+
 #else
 //error
 #error RawSock.hpp: Not defined target OS
 #endif
 
 //local
-#include "LinuxException.hpp"
 #include "EthernetFrame.hpp"
 
 namespace RawSock
 {
-	static const int ETH_P_MIP = 0x88B5;
-
 	class MIPRawSock
 	{
 	public:
@@ -71,17 +71,23 @@ namespace RawSock
 		Parameters:
 			frame		frame to send
 		Return:
+			void
 		*/
 		void sendEthernetFrame(EthernetFrame & frame);
 
 		/*
-		Receive Ethernet frame with socket.
+		Receive Ethernet frame with socket (will override frame).
 		Parameters:
+			frame		frame to store incomming data
 		Return:
-			received frame
+			void
 		*/
-		EthernetFrame recvEthernetFrame();
+		void recvEthernetFrame(EthernetFrame & frame);
 
+		/*
+		const
+		*/
+		static const int ETH_P_MIP = 0x88B5;				//MIP protocol
 	private:
 		int m_fd;
 		MIPAddress m_mip;

@@ -117,14 +117,16 @@ namespace RawSock
 		}
 	}
 
-	EthernetFrame MIPRawSock::recvEthernetFrame()
+	void MIPRawSock::recvEthernetFrame(EthernetFrame & frame)
 	{
-		char buf[1514];
-		ssize_t ret = recv(m_fd, buf, 1514, 0);
+		if (frame.getSize() < EthernetFrame::FRAME_MAX_SIZE) {
+			frame.setSize(EthernetFrame::FRAME_MAX_SIZE);
+		}
+		ssize_t ret = recv(m_fd, frame.getVector().data(), EthernetFrame::FRAME_MAX_SIZE, 0);
 		if (ret == -1) {
 			throw LinuxException::Error("recv()");
 		}
-		return EthernetFrame(buf, static_cast<std::size_t>(ret));
+		frame.setSize(static_cast<std::size_t>(ret));
 	}
 
 #endif

@@ -58,6 +58,14 @@ public:
 	void setProtocol(int protocol);
 
 	/*
+	Set total size of frame (for managing heap alloc).
+	Parameters:
+	Return:
+		void
+	*/
+	void setSize(std::size_t size);
+
+	/*
 	Set msg size.
 	Parameters:
 		size		size to set to
@@ -142,12 +150,26 @@ public:
 	char* getData();
 
 	/*
+	Get ref to vector of frame.
+	Parameters:
+	Return:
+		ref to vec
+	*/
+	std::vector<char> & getVector();
+
+	/*
 	To string (for testing).
 	Parameters:
 	Return:
 		string
 	*/
 	std::string toString();
+
+	/*
+	const
+	*/
+	static const std::size_t FRAME_HEADER_SIZE = 14;	//in byte
+	static const std::size_t FRAME_MAX_SIZE = 1514;		//in byte
 private:
 	std::size_t m_msg_size;
 	std::vector<char> m_data;	//must be atleast 14 bytes
