@@ -17,15 +17,13 @@ EventPoll::~EventPoll()
 	close(m_fd);
 }
 
-bool EventPoll::wait(std::vector<int> & vec)
+bool EventPoll::wait(std::vector<int> & fd_vec)
 {
-	if (vec.size() != max_events) {
-		vec.resize(max_events);
-	}
-	int e_size = epoll_wait(m_fd, vec.data(), vec.size(), -1);
+	int e_size = epoll_wait(m_fd, m_event_array.data(), m_event_array.size(), -1);
 	if (e_size > 0) {
-		if (vec.size() != e_size) {
-			vec.resize(e_size);
+		fd_vec.resize(e_size);
+		for (int i = 0; i < e_size; ++i) {
+			fd_vec[i] = m_event_array[i].data.fd;
 		}
 		return true;
 	}
@@ -34,7 +32,7 @@ bool EventPoll::wait(std::vector<int> & vec)
 		return false;
 	}
 	else {
-		return false;
+		throw LinuxException::Error("epoll_wait()");
 	}
 }
 

@@ -9,6 +9,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <array>
 #include <exception>
 #include <stdexcept>
 #include <cassert>
@@ -35,12 +36,12 @@ public:
 	/*
 	Wait until one or more fd is ready (will block).
 	Parameters:
-		vec		ref to vector<int> that will be filled with file_descriptors (will clear data)
+		fd_vec		ref to vector<int> that will be filled with file_descriptors (will clear data)
 	Return:
 		true if the wait was valid
 		false if the epoll is closed
 	*/
-	bool wait(std::vector<int> & vec);
+	bool wait(std::vector<int> & fd_vec);
 
 	/*
 	Add file descriptor to epoll.
@@ -91,7 +92,8 @@ public:
 
 private:
 	int m_fd;
-	const std::size_t max_events = 20;
+	static const std::size_t max_events = 20;
+	std::array<struct epoll_event, max_events> m_event_array;
 };
 
 #endif
