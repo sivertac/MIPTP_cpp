@@ -129,5 +129,20 @@ namespace RawSock
 		frame.setSize(static_cast<std::size_t>(ret));
 	}
 
+	int MIPRawSock::getFd()
+	{
+		return m_fd;
+	}
+
+	MIPAddress MIPRawSock::getMip()
+	{
+		return m_mip;
+	}
+
+	MACAddress MIPRawSock::getMac()
+	{
+		return m_mac;
+	}
+
 #endif
 }

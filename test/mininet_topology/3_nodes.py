@@ -48,7 +48,6 @@ class MyTopo( Topo ):
         # Add links
         self.addLink (A, B)
         self.addLink (B, C)
-       
 
 topos = { 'mytopo': ( lambda: MyTopo() ) }
 
@@ -61,14 +60,14 @@ def parse_args():
     args = parser.parse_args()                    
     args.t = float(args.t)
     return args
-    
+
 def progress(t):
     while t > 0:
         t -= 1
         sys.stdout.flush()
         sleep(1)
     print '\r\n'
-    
+
 def Config(net, args):
     A = net.getNodeByName('A')
     B = net.getNodeByName('B')
@@ -101,8 +100,7 @@ def Config(net, args):
     #B.sendInt()
     #C.sendInt()
     
-    
- 
+
 def main(argv):
     args = parse_args()
     lg.setLogLevel('info')
@@ -118,4 +116,7 @@ def main(argv):
     net.stop()
 
 if __name__ == '__main__':
-main(sys.argv) 
+    main(sys.argv)
+
+
+ 

@@ -89,13 +89,36 @@ namespace RawSock
 			void
 		*/
 		void recvEthernetFrame(EthernetFrame & frame);
+	
+		/*
+		Get fd.
+		Parameters:
+		Return:
+			fd
+		*/
+		int getFd();
+
+		/*
+		Get mip.
+		Parameters:
+		Return:
+			mip
+		*/
+		MIPAddress getMip();
+
+		/*
+		Get mac.
+		Parameters:
+		Return:
+			mac
+		*/
+		MACAddress getMac();
+
 	private:
 		int m_fd;
 		MIPAddress m_mip;
 		MACAddress m_mac;
 		struct sockaddr_ll m_sock_address;
-
-		friend class ::EventPoll;
 	};
 
 	/*

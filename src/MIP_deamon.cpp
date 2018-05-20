@@ -5,6 +5,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <tuple>
+#include <algorithm>
 #include <cstdlib>
 #include <exception>
 #include <stdexcept>
@@ -18,10 +20,38 @@
 #include "../include/RawSock.hpp"
 #include "../include/AddressTypes.hpp"
 
+struct ARPPair
+{
+	MIPAddress mip;					//dest mip
+	MACAddress mac;					//dest mac
+	RawSock::MIPRawSock* sock;		//socket to reach dest
+};
+
 /*
 Globals
 */
-std::vector<RawSock::MIPRawSock> raw_sock_vec;
+std::vector<RawSock::MIPRawSock> raw_sock_vec;		//(must keep order intact so not to invalidate ARPPairs)
+std::vector<ARPPair> arp_pair_vec;
+
+/*
+Add pair to arp_pair_vec.
+Parameters:
+Return:
+*/
+
+/*
+Receive on raw sock.
+Parameters:
+	sock
+Return:
+	void
+*/
+void receiveRawSock(RawSock::MIPRawSock & sock)
+{
+	EthernetFrame frame;
+	sock.recvEthernetFrame(frame);
+	std::cout << frame.toString() << "\n";
+}
 
 /*
 Init raw_sock_vec.
@@ -52,7 +82,6 @@ Signal function.
 void sigintHandler(int signum)
 {
 	//transport_deamon will handle this
-	std::cout << "Hello from signal\n";
 }
 
 /*
@@ -85,7 +114,6 @@ int main(int argc, char** argv)
 		throw LinuxException::Error("sigaction()");
 	}
 	
-	
 	//epoll
 	EventPoll epoll;
 	
@@ -93,14 +121,32 @@ int main(int argc, char** argv)
 		epoll.addFriend<RawSock::MIPRawSock>(sock);
 	}
 
+	//test
+	for (auto & s : raw_sock_vec) {
+		EthernetFrame frame;
+
+		MACAddress dest{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+		MACAddress source = s.getMac();
+
+
+		frame.setDest(dest);
+		frame.setSource(source);
+		frame.setProtocol(RawSock::MIPRawSock::ETH_P_MIP);
+		std::string msg("fuck you");
+		frame.setMsg(msg.begin(), msg.end());
+		s.sendEthernetFrame(frame);
+	}
 
 	while (epoll.wait() == EventPoll::Okay) {
 		for (auto & ev : epoll.m_event_vector) {
-			std::cout << ev.data.fd << "\n";
+			int in_fd = ev.data.fd;
+			//check raw
+			auto raw_it = std::find_if(raw_sock_vec.begin(), raw_sock_vec.end(), [&](RawSock::MIPRawSock & s){ return s.getFd() == in_fd; });
+			if (raw_it != raw_sock_vec.end()) {
+				receiveRawSock((*raw_it));
+			}
 		}
 	}
-	
-	std::cout << "Terminating\n";
 	
 	return EXIT_SUCCESS;
 }

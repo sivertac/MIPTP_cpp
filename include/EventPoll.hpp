@@ -68,8 +68,7 @@ public:
 	template <class T>
 	void addFriend(T & obj)
 	{
-		//static_assert(std::is_integral<typename T::m_fd>::value, "This member is required");
-		this->add(obj.m_fd);
+		this->add(obj.getFd());
 	}
 	
 
@@ -92,8 +91,7 @@ public:
 	template <class T>
 	void removeFriend(T & obj)
 	{
-		//static_assert(std::is_integral<typename T::m_fd>::value, "This member is required");
-		this->remove(obj.m_fd);
+		this->remove(obj.getFd());
 	}
 
 	/*
