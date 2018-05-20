@@ -3,7 +3,8 @@
 
 #include "../include/EventPoll.hpp"
 
-EventPoll::EventPoll()
+EventPoll::EventPoll() :
+	m_event_vector(max_event)
 {
 	m_fd = epoll_create(100);
 	if (m_fd == -1) {
@@ -17,23 +18,28 @@ EventPoll::~EventPoll()
 	close(m_fd);
 }
 
-bool EventPoll::wait(std::vector<int> & fd_vec)
+EventPoll::WaitState EventPoll::wait(int timeout)
 {
-	int e_size = epoll_wait(m_fd, m_event_array.data(), m_event_array.size(), -1);
+	if (m_event_vector.size() < max_event) {
+		m_event_vector.resize(max_event);
+	}
+	int e_size = epoll_wait(m_fd, m_event_vector.data(), max_event, timeout);
 	if (e_size > 0) {
-		fd_vec.resize(e_size);
-		for (int i = 0; i < e_size; ++i) {
-			fd_vec[i] = m_event_array[i].data.fd;
-		}
-		return true;
+		m_event_vector.resize(e_size);
+		return Okay;
 	}
 	else if (e_size == 0) {
 		//if this them timeout
-		return false;
+		return Timeout;
 	}
 	else {
-		throw LinuxException::Error("epoll_wait()");
+		return Error;
 	}
+}
+
+EventPoll::WaitState EventPoll::wait()
+{
+	return wait(-1);
 }
 
 void EventPoll::add(int fd)

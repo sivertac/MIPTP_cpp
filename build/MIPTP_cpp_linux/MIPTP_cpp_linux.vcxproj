@@ -129,9 +129,13 @@
     <ClCompile Include="..\..\src\MIPFrame.cpp" />
     <ClCompile Include="..\..\src\MIP_deamon.cpp" />
     <ClCompile Include="..\..\src\RawSock.cpp" />
+    <ClCompile Include="..\..\test\getinterface\getinterface.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Makefile" />
+    <None Include="..\..\test\getinterface\Makefile" />
+    <None Include="..\..\test\mininet_topology\3_nodes.py" />
+    <None Include="..\..\test\mininet_topology\5_nodes.py" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ClCompile>

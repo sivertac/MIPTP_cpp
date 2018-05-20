@@ -93,7 +93,14 @@ int main(int argc, char** argv)
 		epoll.addFriend<RawSock::MIPRawSock>(sock);
 	}
 
-	std::cout << "raw_sock_vec.size(): " << raw_sock_vec.size() << "\n";
+
+	while (epoll.wait() == EventPoll::Okay) {
+		for (auto & ev : epoll.m_event_vector) {
+			std::cout << ev.data.fd << "\n";
+		}
+	}
+	
+	std::cout << "Terminating\n";
 	
 	return EXIT_SUCCESS;
 }

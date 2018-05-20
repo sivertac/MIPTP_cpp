@@ -23,6 +23,12 @@
 class EventPoll
 {
 public:
+	enum WaitState {
+		Error,
+		Timeout,
+		Okay
+	};
+
 	/*
 	Construtor.
 	*/
@@ -36,12 +42,12 @@ public:
 	/*
 	Wait until one or more fd is ready (will block).
 	Parameters:
-		fd_vec		ref to vector<int> that will be filled with file_descriptors (will clear data)
+		timeout		epoll timeout parameter
 	Return:
-		true if the wait was valid
-		false if the epoll is closed
+		WaitState enum
 	*/
-	bool wait(std::vector<int> & fd_vec);
+	WaitState wait(int timeout);
+	WaitState wait();
 
 	/*
 	Add file descriptor to epoll.
@@ -90,10 +96,13 @@ public:
 		this->remove(obj.m_fd);
 	}
 
+	/*
+	For holding events from epoll_wait() (capacity must be >= max_event).
+	*/
+	std::vector<struct epoll_event> m_event_vector;
 private:
 	int m_fd;
-	static const std::size_t max_events = 20;
-	std::array<struct epoll_event, max_events> m_event_array;
+	static const std::size_t max_event = 20;
 };
 
 #endif

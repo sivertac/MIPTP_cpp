@@ -7,6 +7,9 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{b6d1825b-15fb-4473-9642-efe81e5cbde5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Test Environment">
+      <UniqueIdentifier>{4892318c-c3d0-4969-8f57-5f0f54af9cf3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\RawSock.hpp">
@@ -65,8 +68,20 @@
     <ClCompile Include="..\..\src\LinuxException.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\test\getinterface\getinterface.c">
+      <Filter>Test Environment</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Makefile" />
+    <None Include="..\..\test\getinterface\Makefile">
+      <Filter>Test Environment</Filter>
+    </None>
+    <None Include="..\..\test\mininet_topology\3_nodes.py">
+      <Filter>Test Environment</Filter>
+    </None>
+    <None Include="..\..\test\mininet_topology\5_nodes.py">
+      <Filter>Test Environment</Filter>
+    </None>
   </ItemGroup>
 </Project>
