@@ -51,6 +51,16 @@ void EthernetFrame::setMsgSize(std::size_t size)
 	}
 }
 
+void EthernetFrame::setMsg(const char* buf, std::size_t size)
+{
+	if (size != getMsgSize()) {
+		setMsgSize(size);
+	}
+	if (size > 0) {
+		std::memcpy(m_data.data() + 14, buf, size);
+	}
+}
+
 MACAddress EthernetFrame::getDest()
 {
 	assert(m_data.size() >= FRAME_HEADER_SIZE);
@@ -80,16 +90,12 @@ std::size_t EthernetFrame::getMsgSize()
 	return m_msg_size;
 }
 
-std::vector<char> EthernetFrame::getMsg()
+char* EthernetFrame::getMsg()
 {
-	assert(m_data.size() >= FRAME_HEADER_SIZE);
-	if (m_msg_size > 0) {
-		return std::vector<char>(m_data.begin() + FRAME_HEADER_SIZE, m_data.begin() + FRAME_HEADER_SIZE + m_msg_size);
-	}
-	else {
-		return std::vector<char>();
-	}
+	return m_data.data() + FRAME_HEADER_SIZE;
 }
+
+
 
 std::size_t EthernetFrame::getSize()
 {

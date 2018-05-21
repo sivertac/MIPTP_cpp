@@ -77,21 +77,12 @@ public:
 	/*
 	Set msg.
 	Parameters:
-		first		iterator
-		last		iterator
+		buf
+		buf_size
 	Return:
 		void
 	*/
-	template <class InputIt>
-	void setMsg(InputIt first, InputIt last)
-	{
-		assert(std::distance(first, last) < 1486);		//frame must be <= 1500 byte
-		if (m_data.size() > 14) {
-			m_data.resize(14);
-		}
-		m_data.insert(m_data.begin() + 14, first, last);
-		setMsgSize(std::distance(first, last));
-	}
+	void setMsg(const char* buf, std::size_t size);
 
 	/*
 	Get dest.
@@ -131,7 +122,7 @@ public:
 	Return:
 		msg
 	*/
-	std::vector<char> getMsg();
+	char* getMsg();
 
 	/*
 	Get total size of frame (in bytes).

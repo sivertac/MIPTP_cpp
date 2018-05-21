@@ -19,6 +19,8 @@
 #include "../include/EventPoll.hpp"
 #include "../include/RawSock.hpp"
 #include "../include/AddressTypes.hpp"
+#include "../include/EthernetFrame.hpp"
+#include "../include/MIPFrame.hpp"
 
 struct ARPPair
 {
@@ -40,9 +42,34 @@ Return:
 */
 
 /*
+Send broadcast frame on sock.
+Parameters:
+	sock		ref to sock
+Return:
+*/
+void sendBroadcastFrame(RawSock::MIPRawSock & sock)
+{
+	MIPFrame mip_frame;
+	mip_frame.setTRA(MIPFrame::A);
+	mip_frame.setDest(0xff);
+	mip_frame.setSource(sock.getMip());
+	mip_frame.setMsgSize(0);
+	mip_frame.setTTL(0xff);
+	
+	EthernetFrame eth_frame;
+	MACAddress dest{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+	MACAddress source = sock.getMac();
+	eth_frame.setDest(dest);
+	eth_frame.setSource(source);
+	eth_frame.setProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
+	eth_frame.setMsg(mip_frame.getData(), mip_frame.getSize());
+	sock.sendEthernetFrame(eth_frame);
+}
+
+/*
 Receive on raw sock.
 Parameters:
-	sock
+	sock		ref to sock
 Return:
 	void
 */
@@ -51,6 +78,7 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 	EthernetFrame frame;
 	sock.recvEthernetFrame(frame);
 	std::cout << frame.toString() << "\n";
+	std::cout << frame.getMsg() << "\n";
 }
 
 /*
@@ -65,6 +93,10 @@ void initRawSock(const std::vector<MIPAddress> & mip_vec)
 	auto inter_names = RawSock::getInterfaceNames(std::vector<int>{ AF_PACKET });
 	for (auto & mip : mip_vec) {
 		if (inter_names.empty()) {
+			
+			//debug
+			std::cout << raw_sock_vec.size() << " interfaces detected.\n";
+			
 			return;
 		}
 		std::string & name = inter_names.back();
@@ -72,8 +104,15 @@ void initRawSock(const std::vector<MIPAddress> & mip_vec)
 			continue;
 		}
 		raw_sock_vec.push_back(RawSock::MIPRawSock(name, mip));
+
+		//debug
+		std::cout << raw_sock_vec.back().toString() << "\n";
+
 		inter_names.pop_back();
 	}
+	
+	//debug
+	std::cout << raw_sock_vec.size() << " interfaces detected.\n";
 }
 
 /*
@@ -127,13 +166,15 @@ int main(int argc, char** argv)
 
 		MACAddress dest{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 		MACAddress source = s.getMac();
-
+		std::string msg("fuck you");
 
 		frame.setDest(dest);
 		frame.setSource(source);
-		frame.setProtocol(RawSock::MIPRawSock::ETH_P_MIP);
-		std::string msg("fuck you");
-		frame.setMsg(msg.begin(), msg.end());
+		frame.setProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
+
+		auto p = msg.c_str();
+		frame.setMsg(p, msg.size());
+
 		s.sendEthernetFrame(frame);
 	}
 

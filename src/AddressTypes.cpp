@@ -6,7 +6,7 @@
 std::string toStringMIPAddress(const MIPAddress & mip)
 {
 	std::ostringstream ss;
-	ss << mip;
+	ss << static_cast<std::size_t>(mip);
 	return ss.str();
 }
 

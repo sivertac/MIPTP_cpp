@@ -115,6 +115,16 @@ void MIPFrame::setMsgSize(std::size_t size)
 	}
 }
 
+void MIPFrame::setMsg(const char* buf, std::size_t size)
+{
+	if (size != getMsgSize()) {
+		setMsgSize(size);
+	}
+	if (size > 0) {
+		std::memcpy(m_data.data() + 4, buf, size);
+	}
+}
+
 int MIPFrame::getTRA()
 {
 	const unsigned long int mask = 0b111;	//C++14
@@ -164,16 +174,12 @@ std::size_t MIPFrame::getMsgSize()
 	}
 }
 
-std::vector<char> MIPFrame::getMsg()
+char* MIPFrame::getMsg()
 {
-	std::size_t size = getMsgSize();
-	if (size > 0) {
-		return std::vector<char>(m_data.begin() + 4, m_data.begin() + 4 + size);
-	}
-	else {
-		return std::vector<char>();
-	}
+	return m_data.data() + 4;
 }
+
+
 
 std::string MIPFrame::toString()
 {
@@ -186,4 +192,14 @@ std::string MIPFrame::toString()
 		<< "TTL: " << getTTL() << "\n"
 		<< "Msg size: " << getMsgSize();
 	return ss.str();
+}
+
+std::size_t MIPFrame::getSize()
+{
+	return m_data.size();
+}
+
+char* MIPFrame::getData()
+{
+	return m_data.data();
 }

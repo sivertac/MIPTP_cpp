@@ -144,5 +144,14 @@ namespace RawSock
 		return m_mac;
 	}
 
+	std::string MIPRawSock::toString()
+	{
+		std::ostringstream ss;
+		ss	<< "fd: " << getFd() << "\n"
+			<< "mip: " << toStringMIPAddress(getMip()) << "\n"
+			<< "mac: " << toStringMACAddress(getMac());
+		return ss.str();
+	}
+
 #endif
 }

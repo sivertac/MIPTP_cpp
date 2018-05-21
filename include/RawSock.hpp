@@ -5,6 +5,8 @@
 #define RawSock_HEADER
 
 #include <iostream>
+#include <sstream>
+#include <ostream>
 #include <string>
 #include <cstring>
 #include <vector>
@@ -113,6 +115,14 @@ namespace RawSock
 			mac
 		*/
 		MACAddress getMac();
+
+		/*
+		To string.
+		Parameters:
+		Return:
+			string
+		*/
+		std::string toString();
 
 	private:
 		int m_fd;
