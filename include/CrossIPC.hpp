@@ -44,11 +44,9 @@ namespace CrossIPC
 	public:
 		/*
 		Constructor.
-		Parameters:
 		*/
-		AnonymousSocket()
-		{
-		}
+		AnonymousSocket();
+
 		/*
 		Constructor.
 		Parameters:

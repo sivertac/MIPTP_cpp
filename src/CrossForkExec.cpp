@@ -5,6 +5,9 @@
 
 namespace CrossForkExec
 {
+	ChildProcess::ChildProcess()
+	{
+	}
 #ifdef WINDOWS
 	ChildProcess::ChildProcess(const PROCESS_INFORMATION & pi) :
 		m_process_information(pi)

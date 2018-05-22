@@ -5,6 +5,9 @@
 
 namespace CrossIPC
 {
+	AnonymousSocket::AnonymousSocket()
+	{
+	}
 #ifdef WINDOWS
 	AnonymousSocketPair createAnonymousSocketPair()
 	{

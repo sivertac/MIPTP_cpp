@@ -6,7 +6,6 @@
 #include <cstdio>
 #include <string>
 #include <vector>
-#include <tuple>
 #include <algorithm>
 #include <cstdlib>
 #include <exception>
@@ -22,6 +21,8 @@
 #include "../include/AddressTypes.hpp"
 #include "../include/EthernetFrame.hpp"
 #include "../include/MIPFrame.hpp"
+#include "../include/CrossIPC.hpp"
+#include "../include/CrossForkExec.hpp"
 
 struct ARPPair
 {
@@ -35,6 +36,9 @@ Globals
 */
 std::vector<RawSock::MIPRawSock> raw_sock_vec;		//(must keep order intact so not to invalidate ARPPairs)
 std::vector<ARPPair> arp_pair_vec;					//(can't have duplicates)
+CrossForkExec::ChildProcess routing_deamon;
+CrossIPC::AnonymousSocket update_sock;
+CrossIPC::AnonymousSocket lookup_sock;
 
 /*
 Print arp_pair_vec.
@@ -214,8 +218,25 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 	
-	//Connect transport deamon
-	//TODO
+	//Connect transport_deamon
+
+	//Connect routing_deamon
+	{
+		auto pair1 = CrossIPC::createAnonymousSocketPair();
+		auto pair2 = CrossIPC::createAnonymousSocketPair();
+		
+		std::vector<std::string> args(2);
+		args[0] = pair1.second.toString();
+		args[1] = pair2.second.toString();
+		CrossForkExec::forkExec("./routing_deamon", args);
+
+		update_sock = pair1.first;
+		lookup_sock = pair2.first;
+		pair1.second.closeResources();
+		pair2.second.closeResources();
+	}
+
+	update_sock.writeString("fuck you");
 	
 	//Make MIPRawSock
 	{
@@ -255,6 +276,9 @@ int main(int argc, char** argv)
 			}
 		}
 	}
+
+	update_sock.closeResources();
+	lookup_sock.closeResources();
 	
 	return EXIT_SUCCESS;
 }

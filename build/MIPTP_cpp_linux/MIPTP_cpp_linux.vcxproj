@@ -129,6 +129,7 @@
     <ClCompile Include="..\..\src\MIPFrame.cpp" />
     <ClCompile Include="..\..\src\MIP_deamon.cpp" />
     <ClCompile Include="..\..\src\RawSock.cpp" />
+    <ClCompile Include="..\..\src\routing_deamon.cpp" />
     <ClCompile Include="..\..\test\getinterface\getinterface.c" />
   </ItemGroup>
   <ItemGroup>

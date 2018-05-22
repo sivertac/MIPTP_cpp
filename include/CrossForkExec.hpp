@@ -52,6 +52,10 @@ namespace CrossForkExec
 	class ChildProcess
 	{
 	public:
+		/*
+		Constructor.
+		*/
+		ChildProcess();
 #ifdef WINDOWS
 		/*
 		Constructor.

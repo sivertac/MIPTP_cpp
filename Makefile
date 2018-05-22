@@ -4,7 +4,7 @@
 CC = g++
 FLAGS = -Wall -Werror -std=c++11 -DLINUX
 
-FILES =	main MIP_deamon MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o EventPoll.o
+FILES =	main MIP_deamon routing_deamon MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o EventPoll.o
 
 all: $(FILES)
 
@@ -14,6 +14,9 @@ main: src/main.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame
 
 MIP_deamon: src/MIP_deamon.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o EventPoll.o
 	$(CC) $(FLAGS) -o MIP_deamon src/MIP_deamon.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o EventPoll.o
+
+routing_deamon: src/routing_deamon.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o EventPoll.o
+	$(CC) $(FLAGS) -o routing_deamon src/routing_deamon.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o EthernetFrame.o AddressTypes.o LinuxException.o EventPoll.o
 
 #objects
 MIPFrame.o: src/MIPFrame.cpp include/MIPFrame.hpp
