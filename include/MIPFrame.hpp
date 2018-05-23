@@ -19,12 +19,19 @@
 class MIPFrame
 {
 public:
+	/*
+	const
+	*/
+	static const std::size_t FRAME_HEADER_SIZE = 18;	//in byte
+	static const std::size_t ETH_HEADER_SIZE = 14;		//in byte
+	static const std::size_t MIP_HEADER_SIZE = 4;		//in byte
+	static const std::size_t FRAME_MAX_SIZE = 1514;		//in byte
 	enum TRA 
 	{
-		ZERO = 0b000,
-		T = 0b001,
-		R = 0b010,
-		A = 0b100
+		ZERO =	0b000,
+		T =		0b001,
+		R =		0b010,
+		A =		0b100
 	};
 
 	/*
@@ -39,47 +46,66 @@ public:
 	MIPFrame(char* buf, std::size_t size);
 
 	/*
-	Get raw buffer.
+	Set ethernet dest.
 	Parameters:
+		dest		dest address
 	Return:
-	vector holding buffer
+		void
 	*/
-	std::vector<char> getRawBuffer();
+	void setEthDest(MACAddress & dest);
 
 	/*
-	Set TRA bits.
+	Set ethernet Source.
+	Parameters:
+		source		source address
+	Return:
+		void
+	*/
+	void setEthSource(MACAddress & source);
+
+	/*
+	Set ethernet protocol.
+	Parameters:
+		protocol	protocol to set to
+	Return:
+		void
+	*/
+	void setEthProtocol(int protocol);
+
+	/*
+	Set mip TRA bits.
 	Parameters:
 		tra		uint8_t where the first 3 bits are relevant
 	Return:
 		void
 	*/
-	void setTRA(int tra);
+	void setMipTRA(int tra);
 
 	/*
-	Set dest address-
+	Set mip dest address-
 	Parameters:
 		dest	destination address
 	Return:
 		void
 	*/
-	void setDest(MIPAddress dest);
+	void setMipDest(MIPAddress dest);
 
 	/*
-	Set source address.
+	Set mip source address.
 	Parameters:
 		source	source address
 	Return:
 		void
 	*/
-	void setSource(MIPAddress source);
+	void setMipSource(MIPAddress source);
 
 	/*
-	Set ttl bits.
+	Set mip ttl bits.
 	Parameters:
 		ttl		int where the first 4 bits are relevant
 	Return:
 	*/
-	void setTTL(int ttl);
+	void setMipTTL(int ttl);
 
 	/*
 	Set msg size (size will be rounded up to a number that is divisible by 4.
@@ -93,45 +119,77 @@ public:
 	/*
 	Set msg.
 	Parameters:
-	buf
-	buf_size
+		buf			pointer to msg
+		buf_size	size of msg in buf
 	Return:
-	void
+		void
 	*/
 	void setMsg(const char* buf, std::size_t size);
-	
 
 	/*
-	Get tra.
+	Set total size of frame.
 	Parameters:
+		size
 	Return:
-		tra as int
+		void
 	*/
-	int getTRA();
-
+	void setSize(std::size_t size);
+	
 	/*
-	Get dest.
+	Get ethernet dest.
 	Parameters:
 	Return:
 		dest
 	*/
-	MIPAddress getDest();
+	MACAddress getEthDest();
 
 	/*
-	Get source.
+	Get ethernet Source.
 	Parameters:
 	Return:
 		source
 	*/
-	MIPAddress getSource();
+	MACAddress getEthSource();
 
 	/*
-	Get ttl.
+	Get ethernet protocol.
+	Parameters:
+	Return:
+		protocol
+	*/
+	int getEthProtocol();
+
+	/*
+	Get mip tra.
+	Parameters:
+	Return:
+		tra as int
+	*/
+	int getMipTRA();
+
+	/*
+	Get mip dest.
+	Parameters:
+	Return:
+		dest
+	*/
+	MIPAddress getMipDest();
+
+	/*
+	Get mip source.
+	Parameters:
+	Return:
+		source
+	*/
+	MIPAddress getMipSource();
+
+	/*
+	Get mip ttl.
 	Parameters:
 	Return:
 		ttl as int
 	*/
-	int getTTL();
+	int getMipTTL();
 
 	/*
 	Get msg size.
@@ -153,7 +211,7 @@ public:
 	Get total size of frame (in bytes).
 	Parameters:
 	Return:
-	size
+		size
 	*/
 	std::size_t getSize();
 
@@ -161,7 +219,7 @@ public:
 	Get raw buffer.
 	Parameters:
 	Return:
-	pointer to raw data of frame
+		pointer to raw data of frame
 	*/
 	char* getData();
 
@@ -173,7 +231,7 @@ public:
 	*/
 	std::string toString();
 private:
-	std::vector<char> m_data;	//must be 4 byte or bigger
+	std::vector<char> m_data;	//must be 18 byte or bigger
 };
 
 #endif // !MIPFrame_HEADER

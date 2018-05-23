@@ -60,6 +60,7 @@ public:
 	/*
 	Set total size of frame (for managing heap alloc).
 	Parameters:
+		size
 	Return:
 		void
 	*/

@@ -109,7 +109,7 @@ namespace RawSock
 		close(m_fd);
 	}
 
-	void MIPRawSock::sendEthernetFrame(EthernetFrame & frame)
+	void MIPRawSock::sendMipFrame(MIPFrame & frame)
 	{
 		ssize_t ret = send(m_fd, frame.getData(), frame.getSize(), 0);
 		if (ret == -1) {
@@ -117,12 +117,12 @@ namespace RawSock
 		}
 	}
 
-	void MIPRawSock::recvEthernetFrame(EthernetFrame & frame)
+	void MIPRawSock::recvMipFrame(MIPFrame & frame)
 	{
-		if (frame.getSize() < EthernetFrame::FRAME_MAX_SIZE) {
-			frame.setSize(EthernetFrame::FRAME_MAX_SIZE);
+		if (frame.getSize() < MIPFrame::FRAME_MAX_SIZE) {
+			frame.setSize(MIPFrame::FRAME_MAX_SIZE);
 		}
-		ssize_t ret = recv(m_fd, frame.getVector().data(), EthernetFrame::FRAME_MAX_SIZE, 0);
+		ssize_t ret = recv(m_fd, frame.getData(), MIPFrame::FRAME_MAX_SIZE, 0);
 		if (ret == -1) {
 			throw LinuxException::Error("recv()");
 		}

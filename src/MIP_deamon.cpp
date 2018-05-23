@@ -19,7 +19,6 @@
 #include "../include/EventPoll.hpp"
 #include "../include/RawSock.hpp"
 #include "../include/AddressTypes.hpp"
-#include "../include/EthernetFrame.hpp"
 #include "../include/MIPFrame.hpp"
 #include "../include/CrossIPC.hpp"
 #include "../include/CrossForkExec.hpp"
@@ -36,9 +35,9 @@ Globals
 */
 std::vector<RawSock::MIPRawSock> raw_sock_vec;		//(must keep order intact so not to invalidate ARPPairs)
 std::vector<ARPPair> arp_pair_vec;					//(can't have duplicates)
-CrossForkExec::ChildProcess routing_deamon;
-CrossIPC::AnonymousSocket update_sock;
-CrossIPC::AnonymousSocket lookup_sock;
+ChildProcess routing_deamon;
+AnonymousSocket update_sock;
+AnonymousSocket lookup_sock;
 
 /*
 Print arp_pair_vec.
@@ -86,19 +85,19 @@ Return:
 void sendResponseFrame(ARPPair & pair)
 {
 	static MIPFrame mip_frame;
-	mip_frame.setTRA(MIPFrame::ZERO);
-	mip_frame.setDest(pair.mip);
-	mip_frame.setSource(pair.sock->getMip());
+	mip_frame.setMipTRA(MIPFrame::ZERO);
+	mip_frame.setMipDest(pair.mip);
+	mip_frame.setMipSource(pair.sock->getMip());
 	mip_frame.setMsgSize(0);
-	mip_frame.setTTL(0xff);
-	static EthernetFrame eth_frame;
+	mip_frame.setMipTTL(0xff);
+	
 	MACAddress dest = pair.mac;
 	MACAddress source = pair.sock->getMac();
-	eth_frame.setDest(dest);
-	eth_frame.setSource(source);
-	eth_frame.setProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
-	eth_frame.setMsg(mip_frame.getData(), mip_frame.getSize());
-	pair.sock->sendEthernetFrame(eth_frame);
+	mip_frame.setEthDest(dest);
+	mip_frame.setEthSource(source);
+	mip_frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
+	mip_frame.setMsg(mip_frame.getData(), mip_frame.getSize());
+	pair.sock->sendMipFrame(mip_frame);
 }
 
 /*
@@ -111,19 +110,19 @@ Return:
 void sendBroadcastFrame(RawSock::MIPRawSock & sock)
 {
 	static MIPFrame mip_frame;
-	mip_frame.setTRA(MIPFrame::A);
-	mip_frame.setDest(0xff);
-	mip_frame.setSource(sock.getMip());
+	mip_frame.setMipTRA(MIPFrame::A);
+	mip_frame.setMipDest(0xff);
+	mip_frame.setMipSource(sock.getMip());
 	mip_frame.setMsgSize(0);
-	mip_frame.setTTL(0xff);
-	static EthernetFrame eth_frame;
+	mip_frame.setMipTTL(0xff);
+
 	static MACAddress dest{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 	MACAddress source = sock.getMac();
-	eth_frame.setDest(dest);
-	eth_frame.setSource(source);
-	eth_frame.setProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
-	eth_frame.setMsg(mip_frame.getData(), mip_frame.getSize());
-	sock.sendEthernetFrame(eth_frame);
+	mip_frame.setEthDest(dest);
+	mip_frame.setEthSource(source);
+	mip_frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
+	mip_frame.setMsg(mip_frame.getData(), mip_frame.getSize());
+	sock.sendMipFrame(mip_frame);
 }
 
 /*
@@ -135,18 +134,17 @@ Return:
 */
 void receiveRawSock(RawSock::MIPRawSock & sock)
 {
-	static EthernetFrame eth_frame;
-	sock.recvEthernetFrame(eth_frame);
-	MIPFrame mip_frame(eth_frame.getMsg(), eth_frame.getMsgSize());
-	int tra = mip_frame.getTRA();
-	MIPAddress mip = mip_frame.getSource();
+	static MIPFrame mip_frame;
+	sock.recvMipFrame(mip_frame);
+	int tra = mip_frame.getMipTRA();
+	MIPAddress mip = mip_frame.getMipSource();
 	std::vector<ARPPair>::iterator arp_it;
 	switch (tra)
 	{
 	case MIPFrame::A:
 		arp_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == mip; });
 		if (arp_it == arp_pair_vec.end()) {
-			addARPPair(sock, mip_frame.getSource(), eth_frame.getSource());
+			addARPPair(sock, mip_frame.getMipSource(), mip_frame.getEthSource());
 			sendResponseFrame(arp_pair_vec.back());
 		}
 		else {
@@ -156,7 +154,7 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 	case MIPFrame::ZERO:
 		arp_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == mip; });
 		if (arp_it == arp_pair_vec.end()) {
-			addARPPair(sock, mip_frame.getSource(), eth_frame.getSource());
+			addARPPair(sock, mip_frame.getMipSource(), mip_frame.getEthSource());
 		}
 		break;
 	default:
@@ -222,13 +220,13 @@ int main(int argc, char** argv)
 
 	//Connect routing_deamon
 	{
-		auto pair1 = CrossIPC::createAnonymousSocketPair();
-		auto pair2 = CrossIPC::createAnonymousSocketPair();
+		auto pair1 = AnonymousSocket::createAnonymousSocketPair();
+		auto pair2 = AnonymousSocket::createAnonymousSocketPair();
 		
 		std::vector<std::string> args(2);
 		args[0] = pair1.second.toString();
 		args[1] = pair2.second.toString();
-		CrossForkExec::forkExec("./routing_deamon", args);
+		routing_deamon = ChildProcess::forkExec("./routing_deamon", args);
 
 		update_sock = pair1.first;
 		lookup_sock = pair2.first;
@@ -279,6 +277,8 @@ int main(int argc, char** argv)
 
 	update_sock.closeResources();
 	lookup_sock.closeResources();
+
+	routing_deamon.join();
 	
 	return EXIT_SUCCESS;
 }

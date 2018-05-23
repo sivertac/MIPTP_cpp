@@ -46,7 +46,7 @@
 #endif
 
 //local
-#include "EthernetFrame.hpp"
+#include "MIPFrame.hpp"
 #include "EventPoll.hpp"
 
 namespace RawSock
@@ -75,22 +75,22 @@ namespace RawSock
 		void closeResources();
 
 		/*
-		Send Ethernet frame with socket (this will not modify the frame).
+		Send mip frame with socket (this will not modify the frame).
 		Parameters:
 			frame		frame to send
 		Return:
 			void
 		*/
-		void sendEthernetFrame(EthernetFrame & frame);
+		void sendMipFrame(MIPFrame & frame);
 
 		/*
-		Receive Ethernet frame with socket (will override frame).
+		Receive mip frame with socket (will override frame).
 		Parameters:
 			frame		frame to store incomming data
 		Return:
 			void
 		*/
-		void recvEthernetFrame(EthernetFrame & frame);
+		void recvMipFrame(MIPFrame & frame);
 	
 		/*
 		Get fd.

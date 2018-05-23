@@ -19,8 +19,8 @@
 /*
 Globals
 */
-CrossIPC::AnonymousSocket update_sock;
-CrossIPC::AnonymousSocket lookup_sock;
+AnonymousSocket update_sock;
+AnonymousSocket lookup_sock;
 
 /*
 args: ./routinh_deamon <update sock> <lookup sock>
@@ -33,8 +33,8 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 	
-	update_sock = CrossIPC::AnonymousSocket(argv[1]);
-	lookup_sock = CrossIPC::AnonymousSocket(argv[2]);
+	update_sock = AnonymousSocket(argv[1]);
+	lookup_sock = AnonymousSocket(argv[2]);
 
 	std::string str = update_sock.readString();
 

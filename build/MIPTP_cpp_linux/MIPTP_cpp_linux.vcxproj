@@ -112,7 +112,6 @@
     <ClInclude Include="..\..\include\AddressTypes.hpp" />
     <ClInclude Include="..\..\include\CrossForkExec.hpp" />
     <ClInclude Include="..\..\include\CrossIPC.hpp" />
-    <ClInclude Include="..\..\include\EthernetFrame.hpp" />
     <ClInclude Include="..\..\include\EventPoll.hpp" />
     <ClInclude Include="..\..\include\LinuxException.hpp" />
     <ClInclude Include="..\..\include\MIPFrame.hpp" />
@@ -122,7 +121,6 @@
     <ClCompile Include="..\..\src\AddressTypes.cpp" />
     <ClCompile Include="..\..\src\CrossForkExec.cpp" />
     <ClCompile Include="..\..\src\CrossIPC.cpp" />
-    <ClCompile Include="..\..\src\EthernetFrame.cpp" />
     <ClCompile Include="..\..\src\EventPoll.cpp" />
     <ClCompile Include="..\..\src\LinuxException.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
