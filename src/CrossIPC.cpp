@@ -147,6 +147,11 @@ void AnonymousSocket::closeResources()
 	close(m_fd);
 }
 
+int AnonymousSocket::getFd()
+{
+	return m_fd;
+}
+
 AnonymousSocket::AnonymousSocketPair AnonymousSocket::createAnonymousSocketPair()
 {
 	int fd_pair[2];

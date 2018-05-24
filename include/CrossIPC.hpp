@@ -137,6 +137,14 @@ public:
 		return sock;
 	}
 
+	/*
+	Get fd.
+	Parameters:
+	Return:
+	fd
+	*/
+	int getFd();
+
 	using AnonymousSocketPair = std::pair<AnonymousSocket, AnonymousSocket>;
 	/*
 	Create a AnonymousSocketPair.
@@ -184,7 +192,7 @@ public:
 	Get fd.
 	Parameters:
 	Return:
-	fd
+		fd
 	*/
 	int getFd();
 

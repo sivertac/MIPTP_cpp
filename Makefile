@@ -4,7 +4,7 @@
 CC = g++
 FLAGS = -Wall -Werror -std=c++11 -DLINUX
 
-FILES =	main MIP_deamon routing_deamon MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o
+FILES =	main MIP_deamon routing_deamon MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o DistanceVectorTable.o
 
 all: $(FILES)
 
@@ -39,6 +39,9 @@ AddressTypes.o: src/AddressTypes.cpp include/AddressTypes.hpp
 
 LinuxException.o: src/LinuxException.cpp include/LinuxException.hpp
 	$(CC) $(FLAGS) -c src/LinuxException.cpp
+
+DistanceVectorTable.o: src/DistanceVectorTable.cpp include/DistanceVectorTable.hpp
+	$(CC) $(FLAGS) -c src/DistanceVectorTable.cpp
 
 clean:
 	rm $(FILES)
