@@ -15,6 +15,7 @@
 #include <signal.h>
 
 #include "../include/CrossIPC.hpp"
+#include "../include/EventPoll.hpp"
 
 /*
 Globals
@@ -36,11 +37,19 @@ int main(int argc, char** argv)
 	update_sock = AnonymousSocket(argv[1]);
 	lookup_sock = AnonymousSocket(argv[2]);
 
-	std::string str = update_sock.readString();
-
-
-	std::cout << "From routing_deamon: " << str << "\n";
 	
+	EventPoll epoll;
+
+
+	while (epoll.wait() == EventPoll::Okay) {
+		for (auto & ev : epoll.m_event_vector) {
+			int in_fd = ev.data.fd;
+			
+			std::cout << in_fd << "\n";
+		}
+	}
+
+
 	return 0;
 }
 

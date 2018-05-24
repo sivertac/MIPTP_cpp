@@ -181,6 +181,14 @@ public:
 	void closeResources();
 
 	/*
+	Get fd.
+	Parameters:
+	Return:
+	fd
+	*/
+	int getFd();
+
+	/*
 	Connect to a named socket.
 	Parameters:
 		path		name of socket

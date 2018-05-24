@@ -215,6 +215,11 @@ void NamedSocket::closeResources()
 	unlink(m_sock_address.sun_path);
 }
 
+int NamedSocket::getFd()
+{
+	return m_fd;
+}
+
 AnonymousSocket NamedSocket::connectToNamedSocket(std::string & path)
 {
 	struct sockaddr_un address;
