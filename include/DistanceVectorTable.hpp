@@ -9,6 +9,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <cstdint>
 
 //local
 #include "AddressTypes.hpp"
@@ -27,7 +29,8 @@ public:
 	/*
 	const
 	*/
-	static const Cost INFINITY = 0xff;
+	static const Cost INF_COST = 0xff;
+	static const Cost HOP_COST = 1;
 
 	/*
 	Add entry to table.
@@ -61,10 +64,11 @@ public:
 	Pack advertisment for transmission.
 	Parameters:
 		buf
+		dest_mip
 	Return:
 		void
 	*/
-	void packAdvertisment(std::vector<char> & buf);
+	void packAdvertisment(std::vector<char> & buf, MIPAddress dest_mip);
 
 	/*
 	Unpack advertisment.
@@ -74,6 +78,35 @@ public:
 		void
 	*/
 	void unpackAdvertisment(std::vector<char> & buf);
+
+	/*
+	Update table with advertisment from sender.
+	Parameters:
+		sender		address of sender of advertisment
+		advert		ref to table containing advertisment that is from sender
+	Return:
+		true if the table was changed
+		false if not
+	*/
+	bool update(MIPAddress sender, DistanceVectorTable & advert);
+
+	/*
+	Find Column with 'to'.
+	Parameters:
+		to
+	Return:
+		iterator
+	*/
+	std::vector<Column>::iterator findTo(MIPAddress to);
+
+	/*
+	Add arp discovery to table.
+	Parameters:
+		mip		discovery
+	Return:
+		void
+	*/
+	void addArpDiscovery(MIPAddress mip);
 
 private:
 	std::vector<Column> m_data;

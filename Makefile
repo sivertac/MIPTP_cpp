@@ -4,19 +4,22 @@
 CC = g++
 FLAGS = -Wall -Werror -std=c++11 -DLINUX
 
-FILES =	main MIP_deamon routing_deamon MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o DistanceVectorTable.o
+BINARIES = main MIP_deamon routing_deamon
+OBJECTS = MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o DistanceVectorTable.o
+
+FILES =	$(BINARIES) $(OBJECTS)
 
 all: $(FILES)
 
 #binary
-main: src/main.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o
-	$(CC) $(FLAGS) -o main src/main.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o
+main: src/main.cpp $(OBJECTS)
+	$(CC) $(FLAGS) -o main src/main.cpp $(OBJECTS)
 
-MIP_deamon: src/MIP_deamon.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o
-	$(CC) $(FLAGS) -o MIP_deamon src/MIP_deamon.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o
+MIP_deamon: src/MIP_deamon.cpp $(OBJECTS)
+	$(CC) $(FLAGS) -o MIP_deamon src/MIP_deamon.cpp $(OBJECTS)
 
-routing_deamon: src/routing_deamon.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o
-	$(CC) $(FLAGS) -o routing_deamon src/routing_deamon.cpp MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o
+routing_deamon: src/routing_deamon.cpp $(OBJECTS)
+	$(CC) $(FLAGS) -o routing_deamon src/routing_deamon.cpp $(OBJECTS)
 
 #objects
 MIPFrame.o: src/MIPFrame.cpp include/MIPFrame.hpp
