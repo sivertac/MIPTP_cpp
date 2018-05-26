@@ -119,7 +119,7 @@ std::string AnonymousSocket::toString()
 }
 	
 std::size_t AnonymousSocket::write(const char* buf, std::size_t len)
-{
+{	
 	ssize_t ret = send(m_fd, buf, len, 0);
 	if (ret == 0) {
 		throw BrokenPipeException();
@@ -132,7 +132,7 @@ std::size_t AnonymousSocket::write(const char* buf, std::size_t len)
 
 std::size_t AnonymousSocket::read(char* buf, std::size_t buf_size)
 {
-	ssize_t ret = recv(m_fd, buf, buf_size, 0);
+	ssize_t ret = recv(m_fd, buf, buf_size, 0);	
 	if (ret == 0) {
 		throw BrokenPipeException();
 	}

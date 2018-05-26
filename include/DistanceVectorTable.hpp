@@ -11,6 +11,8 @@
 #include <vector>
 #include <algorithm>
 #include <cstdint>
+#include <iomanip>
+#include <cstring>
 
 //local
 #include "AddressTypes.hpp"
@@ -107,6 +109,14 @@ public:
 		void
 	*/
 	void addArpDiscovery(MIPAddress mip);
+
+	/*
+	To string.
+	Parameters:
+	Return:
+		string of table
+	*/
+	std::string toString();
 
 private:
 	std::vector<Column> m_data;

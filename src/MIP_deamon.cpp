@@ -23,6 +23,14 @@
 #include "../include/CrossIPC.hpp"
 #include "../include/CrossForkExec.hpp"
 
+enum update_sock_option 
+{
+	LOCAL_MIP = 1,
+	ARP_DISCOVERY = 2,
+	ARP_LOSTCONNECTION = 3,
+	ADVERTISEMENT = 4
+};
+
 struct ARPPair
 {
 	MIPAddress mip;					//dest mip
@@ -38,6 +46,54 @@ std::vector<ARPPair> arp_pair_vec;					//(can't have duplicates)
 ChildProcess routing_deamon;
 AnonymousSocket update_sock;
 AnonymousSocket lookup_sock;
+
+/*
+Send local mip discovery to update_sock.
+Parameters:
+	mip		local mip discovered
+Return:
+	void
+Global:
+	update_sock
+*/
+void sendLocalMip(MIPAddress mip)
+{
+	std::uint8_t option = update_sock_option::LOCAL_MIP;
+	update_sock.write(reinterpret_cast<char*>(&option), sizeof(option));
+	update_sock.write(reinterpret_cast<char*>(&mip), sizeof(mip));
+}
+
+/*
+Send arp discovery with update_sock.
+Parameters:
+	mip		discovered address
+Return:
+	void
+Glboal:
+	update_sock
+*/
+void sendArpDiscovery(MIPAddress mip)
+{
+	std::uint8_t option = update_sock_option::ARP_DISCOVERY;
+	update_sock.write(reinterpret_cast<char*>(&option), sizeof(option));
+	update_sock.write(reinterpret_cast<char*>(&mip), sizeof(mip));
+}
+
+/*
+Send arp lost connection with update_sock.
+Parameters:
+	mip		lost address
+Return:
+	void
+Global:
+	update_sock
+*/
+void sendArpLostConnection(MIPAddress mip)
+{
+	std::uint8_t option = update_sock_option::ARP_LOSTCONNECTION;
+	update_sock.write(reinterpret_cast<char*>(&option), sizeof(option));
+	update_sock.write(reinterpret_cast<char*>(&mip), sizeof(mip));
+}
 
 /*
 Print arp_pair_vec.
@@ -73,6 +129,8 @@ void addARPPair(RawSock::MIPRawSock & sock, MIPAddress mip, MACAddress mac)
 	pair.mac = mac;
 	pair.sock = &sock;
 	arp_pair_vec.push_back(pair);
+
+	printARPTable();
 }
 
 /*
@@ -126,11 +184,72 @@ void sendBroadcastFrame(RawSock::MIPRawSock & sock)
 }
 
 /*
+Receive on lookup_sock.
+Parameters:
+Return:
+	void
+Global:
+	lookup_sock
+*/
+void receiveLookupSock()
+{
+
+}
+
+/*
+Receive on update_sock.
+Parameters:
+Return:
+	void
+Global:
+	update_sock
+	arp_pair_vec
+*/
+void receiveUpdateSock()
+{
+	//receive:
+	//	to
+	//	ad size
+	//	ad
+	static MIPFrame frame;
+	MIPAddress dest_mip;
+	std::size_t ad_size;
+
+	update_sock.read(reinterpret_cast<char*>(&dest_mip), sizeof(dest_mip));
+	update_sock.read(reinterpret_cast<char*>(&ad_size), sizeof(ad_size));
+	
+	frame.setMsgSize(ad_size);
+	update_sock.read(frame.getMsg(), ad_size);
+	
+	auto pair_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == dest_mip; });
+	if (pair_it == arp_pair_vec.end()) {
+		throw std::runtime_error("Should have found pair");
+	}
+	ARPPair & pair = (*pair_it);
+
+	frame.setMipTRA(MIPFrame::R);
+	frame.setMipDest(pair.mip);
+	frame.setMipSource(pair.sock->getMip());
+	frame.setMipTTL(0xff);
+
+	MACAddress eth_dest = pair.mac;
+	MACAddress eth_source = pair.sock->getMac();
+
+	frame.setEthDest(eth_dest);
+	frame.setEthSource(eth_source);
+	frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
+
+	pair.sock->sendMipFrame(frame);
+}
+
+/*
 Receive on raw sock.
 Parameters:
 	sock		ref to sock
 Return:
 	void
+Global:
+	update_sock
 */
 void receiveRawSock(RawSock::MIPRawSock & sock)
 {
@@ -138,6 +257,9 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 	sock.recvMipFrame(mip_frame);
 	int tra = mip_frame.getMipTRA();
 	MIPAddress mip = mip_frame.getMipSource();
+
+	std::size_t ad_size;
+
 	std::vector<ARPPair>::iterator arp_it;
 	switch (tra)
 	{
@@ -145,6 +267,7 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 		arp_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == mip; });
 		if (arp_it == arp_pair_vec.end()) {
 			addARPPair(sock, mip_frame.getMipSource(), mip_frame.getEthSource());
+			sendArpDiscovery(mip);
 			sendResponseFrame(arp_pair_vec.back());
 		}
 		else {
@@ -155,7 +278,19 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 		arp_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == mip; });
 		if (arp_it == arp_pair_vec.end()) {
 			addARPPair(sock, mip_frame.getMipSource(), mip_frame.getEthSource());
+			sendArpDiscovery(mip);
 		}
+		break;
+	case MIPFrame::R:
+		//send ad to routing_deamon
+		//send:
+		//	from
+		//	ad size
+		//	ad
+		ad_size = mip_frame.getMsgSize();
+		update_sock.write(reinterpret_cast<char*>(&mip), sizeof(mip));
+		update_sock.write(reinterpret_cast<char*>(&ad_size), sizeof(ad_size));
+		update_sock.write(mip_frame.getMsg(), ad_size);
 		break;
 	default:
 		throw std::runtime_error("Invalid TRA");
@@ -234,8 +369,6 @@ int main(int argc, char** argv)
 		pair2.second.closeResources();
 	}
 
-	update_sock.writeString("fuck you");
-	
 	//Make MIPRawSock
 	{
 		std::vector<MIPAddress> mip_vec;
@@ -254,9 +387,15 @@ int main(int argc, char** argv)
 	
 	//epoll
 	EventPoll epoll;
-	
 	for (auto & sock : raw_sock_vec) {
 		epoll.addFriend<RawSock::MIPRawSock>(sock);
+	}
+	epoll.addFriend<AnonymousSocket>(update_sock);
+	epoll.addFriend<AnonymousSocket>(lookup_sock);
+
+	//send local mip addresses to routing_deamon
+	for (auto & s : raw_sock_vec) {
+		sendLocalMip(s.getMip());
 	}
 
 	//Send first broadcast frames
@@ -267,6 +406,15 @@ int main(int argc, char** argv)
 	while (epoll.wait() == EventPoll::Okay) {
 		for (auto & ev : epoll.m_event_vector) {
 			int in_fd = ev.data.fd;
+			
+			//check
+			if (in_fd == update_sock.getFd()) {
+				receiveUpdateSock();
+			}
+			else if (in_fd == lookup_sock.getFd()) {
+				receiveLookupSock();
+			}
+			
 			//check raw
 			auto raw_it = std::find_if(raw_sock_vec.begin(), raw_sock_vec.end(), [&](RawSock::MIPRawSock & s){ return s.getFd() == in_fd; });
 			if (raw_it != raw_sock_vec.end()) {
