@@ -258,6 +258,7 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 	int tra = mip_frame.getMipTRA();
 	MIPAddress mip = mip_frame.getMipSource();
 
+	std::uint8_t option;
 	std::size_t ad_size;
 
 	std::vector<ARPPair>::iterator arp_it;
@@ -288,6 +289,8 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 		//	ad size
 		//	ad
 		ad_size = mip_frame.getMsgSize();
+		option = update_sock_option::ADVERTISEMENT;
+		update_sock.write(reinterpret_cast<char*>(&option), sizeof(std::uint8_t));
 		update_sock.write(reinterpret_cast<char*>(&mip), sizeof(mip));
 		update_sock.write(reinterpret_cast<char*>(&ad_size), sizeof(ad_size));
 		update_sock.write(mip_frame.getMsg(), ad_size);
