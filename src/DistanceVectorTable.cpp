@@ -37,7 +37,7 @@ void DistanceVectorTable::packAdvertisment(std::vector<char>& buf, MIPAddress de
 		if (c.via != dest_mip) {
 			buf.push_back(c.to);
 			buf.push_back(c.cost);
-			size += 2;
+			size += 1;
 		}
 	}
 	std::memcpy(buf.data(), &size, sizeof(size));
@@ -47,10 +47,10 @@ void DistanceVectorTable::unpackAdvertisment(std::vector<char>& buf)
 {
 	std::uint16_t size;
 	std::memcpy(&size, buf.data(), sizeof(size));
-	std::size_t i = sizeof(size);
 	if (m_data.size() != size) {
 		m_data.resize(size);
 	}
+	std::size_t i = sizeof(size);
 	for (Column & c : m_data) {
 		c.to = buf.data()[i];
 		c.cost = buf.data()[i + 1];
@@ -104,7 +104,7 @@ void DistanceVectorTable::addArpDiscovery(MIPAddress mip)
 std::string DistanceVectorTable::toString()
 {
 	std::ostringstream ss;
-	ss << std::left << std::setw(6) << "To" << std::left << std::setw(6) << "Via" << std::left << std::setw(6) << "Cost";
+	ss << std::left << std::setw(6) << "To:" << std::left << std::setw(6) << "Via:" << std::left << std::setw(6) << "Cost:";
 	for (Column & p : m_data) {
 		ss << "\n";
 		ss << std::left << std::setw(6) << (int)p.to << std::left << std::setw(6) << (int)p.via << std::left << std::setw(6) << (int)p.cost;

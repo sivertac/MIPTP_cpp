@@ -110,6 +110,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\AddressTypes.hpp" />
+    <ClInclude Include="..\..\include\CircleBuffer.hpp" />
     <ClInclude Include="..\..\include\CrossForkExec.hpp" />
     <ClInclude Include="..\..\include\CrossIPC.hpp" />
     <ClInclude Include="..\..\include\DistanceVectorTable.hpp" />
@@ -117,6 +118,7 @@
     <ClInclude Include="..\..\include\LinuxException.hpp" />
     <ClInclude Include="..\..\include\MIPFrame.hpp" />
     <ClInclude Include="..\..\include\RawSock.hpp" />
+    <ClInclude Include="..\..\include\TimerWrapper.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\AddressTypes.cpp" />
@@ -130,6 +132,7 @@
     <ClCompile Include="..\..\src\MIP_deamon.cpp" />
     <ClCompile Include="..\..\src\RawSock.cpp" />
     <ClCompile Include="..\..\src\routing_deamon.cpp" />
+    <ClCompile Include="..\..\src\TimerWrapper.cpp" />
     <ClCompile Include="..\..\test\getinterface\getinterface.c" />
   </ItemGroup>
   <ItemGroup>

@@ -5,7 +5,7 @@ CC = g++
 FLAGS = -Wall -Werror -std=c++11 -DLINUX
 
 BINARIES = main MIP_deamon routing_deamon
-OBJECTS = MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o DistanceVectorTable.o
+OBJECTS = MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o DistanceVectorTable.o TimerWrapper.o
 
 FILES =	$(BINARIES) $(OBJECTS)
 
@@ -45,6 +45,9 @@ LinuxException.o: src/LinuxException.cpp include/LinuxException.hpp
 
 DistanceVectorTable.o: src/DistanceVectorTable.cpp include/DistanceVectorTable.hpp
 	$(CC) $(FLAGS) -c src/DistanceVectorTable.cpp
+
+TimerWrapper.o: src/TimerWrapper.cpp include/TimerWrapper.hpp
+	$(CC) $(FLAGS) -c src/TimerWrapper.cpp
 
 clean:
 	rm $(FILES)

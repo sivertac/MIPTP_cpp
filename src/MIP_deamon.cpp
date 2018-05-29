@@ -22,6 +22,9 @@
 #include "../include/MIPFrame.hpp"
 #include "../include/CrossIPC.hpp"
 #include "../include/CrossForkExec.hpp"
+#include "../include/TimerWrapper.hpp"
+
+#include "../include/CircleBuffer.hpp"
 
 enum update_sock_option 
 {
@@ -33,6 +36,7 @@ enum update_sock_option
 
 struct ARPPair
 {
+	bool reply;						//if true then pair is not lost
 	MIPAddress mip;					//dest mip
 	MACAddress mac;					//dest mac
 	RawSock::MIPRawSock* sock;		//socket to reach dest
@@ -46,6 +50,9 @@ std::vector<ARPPair> arp_pair_vec;					//(can't have duplicates)
 ChildProcess routing_deamon;
 AnonymousSocket update_sock;
 AnonymousSocket lookup_sock;
+const int ARP_TIMEOUT = 2000;						//in ms
+
+CircleBuffer<int, 10> buf;
 
 /*
 Send local mip discovery to update_sock.
@@ -125,6 +132,7 @@ Global:
 void addARPPair(RawSock::MIPRawSock & sock, MIPAddress mip, MACAddress mac)
 {
 	ARPPair pair;
+	pair.reply = true;
 	pair.mip = mip;
 	pair.mac = mac;
 	pair.sock = &sock;
@@ -240,6 +248,11 @@ void receiveUpdateSock()
 	frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
 
 	pair.sock->sendMipFrame(frame);
+
+	//std::cout << "Send ad on raw sock:\n";
+	//std::cout << "ad_size: " << ad_size << "\n";
+	//std::cout << "ad_length field: " << (int)*reinterpret_cast<std::uint16_t*>(frame.getMsg()) << "\n";;
+	//std::cout << "frame msg size: " << frame.getMsgSize() << "\n";
 }
 
 /*
@@ -272,6 +285,7 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 			sendResponseFrame(arp_pair_vec.back());
 		}
 		else {
+			arp_it->reply = true;
 			sendResponseFrame((*arp_it));
 		}
 		break;
@@ -280,6 +294,9 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 		if (arp_it == arp_pair_vec.end()) {
 			addARPPair(sock, mip_frame.getMipSource(), mip_frame.getEthSource());
 			sendArpDiscovery(mip);
+		}
+		else {
+			arp_it->reply = true;
 		}
 		break;
 	case MIPFrame::R:
@@ -406,22 +423,45 @@ int main(int argc, char** argv)
 		sendBroadcastFrame(s);
 	}
 
+	//timer
+	TimerWrapper timeout_timer;
+	
+	timeout_timer.setExpirationFromNow(ARP_TIMEOUT);
+	epoll.addFriend(timeout_timer);
+
 	while (epoll.wait() == EventPoll::Okay) {
 		for (auto & ev : epoll.m_event_vector) {
 			int in_fd = ev.data.fd;
-			
 			//check
-			if (in_fd == update_sock.getFd()) {
+			if (in_fd == timeout_timer.getFd()) {
+				//std::cout << "Expired: " << timeout_timer.readExpiredTime() << "\n";
+				for (auto it = arp_pair_vec.begin(); it != arp_pair_vec.end(); ) {
+					if (!it->reply) {
+						sendArpLostConnection(it->mip);
+						arp_pair_vec.erase(it);
+					}
+					else {
+						it->reply = false;
+						++it;
+					}
+				}
+				for (RawSock::MIPRawSock & sock : raw_sock_vec) {
+					sendBroadcastFrame(sock);
+				}
+				timeout_timer.setExpirationFromNow(ARP_TIMEOUT);
+			}
+			else if (in_fd == update_sock.getFd()) {
 				receiveUpdateSock();
 			}
 			else if (in_fd == lookup_sock.getFd()) {
 				receiveLookupSock();
 			}
-			
-			//check raw
-			auto raw_it = std::find_if(raw_sock_vec.begin(), raw_sock_vec.end(), [&](RawSock::MIPRawSock & s){ return s.getFd() == in_fd; });
-			if (raw_it != raw_sock_vec.end()) {
-				receiveRawSock((*raw_it));
+			else {
+				//check raw
+				auto raw_it = std::find_if(raw_sock_vec.begin(), raw_sock_vec.end(), [&](RawSock::MIPRawSock & s){ return s.getFd() == in_fd; });
+				if (raw_it != raw_sock_vec.end()) {
+					receiveRawSock((*raw_it));
+				}
 			}
 		}
 	}

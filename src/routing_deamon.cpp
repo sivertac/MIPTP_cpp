@@ -64,8 +64,6 @@ void sendAdvertisment(MIPAddress exclude)
 			update_sock.write(buf.data(), buf_size);
 		}
 	}
-
-	std::cout << distance_vector_table.toString() << "\n";
 }
 
 /*
@@ -76,6 +74,7 @@ Return:
 Global:
 	update_sock
 	distance_vector_table
+	neighbour_mip_vec
 */
 void receiveUpdateSock()
 {
@@ -107,7 +106,7 @@ void receiveUpdateSock()
 	case update_sock_option::ARP_LOSTCONNECTION:
 		update_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
 		neighbour_it = std::find(neighbour_mip_vec.begin(), neighbour_mip_vec.end(), mip);
-		if (neighbour_it == neighbour_mip_vec.end()) {
+		if (neighbour_it != neighbour_mip_vec.end()) {
 			neighbour_mip_vec.erase(neighbour_it);
 			distance_vector_table.setViaInfinity(mip);
 			sendAdvertisment(mip);
@@ -133,6 +132,7 @@ void receiveUpdateSock()
 		throw std::runtime_error("Invalid option");
 		break;
 	}
+	std::cout << distance_vector_table.toString() << "\n";
 }
 
 /*
@@ -142,14 +142,23 @@ Return:
 	void
 Global:
 	lookup_sock
+	distance_vector_table
 */
 void receiveLookupSock()
 {
-
+	//receive:
+	//	mip
+	//	frame identifier
+	
+	//reply:
+	//	search success
+	//	next hop
+	//	frame identifier
+	
 }
 
 /*
-args: ./routinh_deamon <update sock> <lookup sock>
+args: ./routing_deamon <update sock> <lookup sock>
 */
 int main(int argc, char** argv)
 {
