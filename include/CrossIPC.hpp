@@ -41,6 +41,7 @@ class BrokenPipeException : public std::exception
 class AnonymousSocket
 {
 public:
+
 	/*
 	Constructor.
 	*/

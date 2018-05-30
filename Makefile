@@ -19,7 +19,7 @@ MIP_deamon: src/MIP_deamon.cpp $(OBJECTS)
 	$(CC) $(FLAGS) -o MIP_deamon src/MIP_deamon.cpp $(OBJECTS)
 
 routing_deamon: src/routing_deamon.cpp $(OBJECTS)
-	$(CC) $(FLAGS) -o routing_deamon src/routing_deamon.cpp $(OBJECTS)
+	$(CC) $(FLAGS) -o routing_deamon src/routing_deamon.cpp $(OBJECTS) -pthread
 
 #objects
 MIPFrame.o: src/MIPFrame.cpp include/MIPFrame.hpp

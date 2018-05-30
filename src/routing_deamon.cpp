@@ -10,6 +10,10 @@
 #include <cstdlib>
 #include <exception>
 #include <stdexcept>
+#include <thread>
+#include <queue>
+#include <condition_variable>
+
 
 //LINUX
 #include <signal.h>
@@ -35,6 +39,16 @@ AnonymousSocket update_sock;
 AnonymousSocket lookup_sock;
 std::vector<MIPAddress> neighbour_mip_vec;
 DistanceVectorTable distance_vector_table;
+//main thread is receive thread
+std::thread update_thread;
+std::thread lookup_thread;
+std::mutex update_mutex;
+std::mutex lookup_mutex;
+std::condition_variable update_blocker;
+std::condition_variable lookup_blocker;
+std::queue<MIPAddress> update_queue;					//contains order to exclude ads sendt
+std::queue<MIPAddress> lookup_queue;					//contains request mip
+bool running = true;
 
 /*
 Send advertisment to all direct neighbours.
@@ -148,13 +162,71 @@ void receiveLookupSock()
 {
 	//receive:
 	//	mip
-	//	frame identifier
-	
-	//reply:
-	//	search success
-	//	next hop
-	//	frame identifier
-	
+	MIPAddress mip;
+	lookup_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
+	{
+		std::lock_guard<std::mutex> lock(lookup_mutex);
+		lookup_queue.push(mip);
+	}
+	lookup_blocker.notify_one();
+}
+
+/*
+Handler for update_thread.
+*/
+void update_thread_handler()
+{
+
+	{
+		std::unique_lock<std::mutex> lock(update_mutex);
+		update_blocker.wait(lock, [] { return !update_queue.empty(); });
+	}
+
+
+}
+
+/*
+Handler for lookup_thread.
+*/
+void lookup_thread_handler()
+{
+	std::cout << "lookup_thread start\n";
+	while (true) {
+		MIPAddress mip;
+		{
+			std::unique_lock<std::mutex> lock(lookup_mutex);
+			lookup_blocker.wait(lock, [] { return !lookup_queue.empty() || !running; });
+
+
+
+			mip = lookup_queue.front();
+			lookup_queue.pop();
+		}
+		auto dis_it = distance_vector_table.findTo(mip);
+		if (dis_it != distance_vector_table.m_data.end()) {
+			//reply:
+			//	search success
+			//	next hop
+			const bool succ = true;
+			lookup_sock.write(reinterpret_cast<const char*>(&succ), sizeof(succ));
+			lookup_sock.write(reinterpret_cast<char*>(&dis_it->via), sizeof(MIPAddress));
+		}
+		else {
+			//reply:
+			//	search failure
+			const bool succ = false;
+			lookup_sock.write(reinterpret_cast<const char*>(&succ), sizeof(succ));
+		}
+	}
+	std::cout << "lookup_thread exit\n";
+}
+
+/*
+Signal function.
+*/
+void sigintHandler(int signum)
+{
+	//transport_deamon will handle this
 }
 
 /*
@@ -168,9 +240,20 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 	
+	//signal
+	struct sigaction sa;
+	sa.sa_handler = &sigintHandler;
+	if (sigaction(SIGINT, &sa, NULL) == -1) {
+		throw LinuxException::Error("sigaction()");
+	}
+
+	//wrap sockets
 	update_sock = AnonymousSocket(argv[1]);
 	lookup_sock = AnonymousSocket(argv[2]);
 
+	//start threads
+	update_thread = std::thread(update_thread_handler);
+	lookup_thread = std::thread(lookup_thread_handler);
 	
 	EventPoll epoll;
 
@@ -180,18 +263,24 @@ int main(int argc, char** argv)
 	while (epoll.wait() == EventPoll::Okay) {
 		for (auto & ev : epoll.m_event_vector) {
 			int in_fd = ev.data.fd;
-			
 			if (in_fd == update_sock.getFd()) {
 				receiveUpdateSock();
 			}
 			else if (in_fd == lookup_sock.getFd()) {
-
+				receiveLookupSock();
 			}
 		}
 	}
 
-	std::cout << "routing_deamon is terminating\n";
+	//cleanup
+	if (update_thread.joinable()) {
+		update_thread.join();
+	}
+	if (lookup_thread.joinable()) {
+		lookup_thread.join();
+	}
 
+	std::cout << "routing_deamon is terminating\n";
 	return 0;
 }
 

@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <exception>
 #include <stdexcept>
+#include <queue>
 
 //LINUX
 #include <signal.h>
@@ -23,8 +24,6 @@
 #include "../include/CrossIPC.hpp"
 #include "../include/CrossForkExec.hpp"
 #include "../include/TimerWrapper.hpp"
-
-#include "../include/CircleBuffer.hpp"
 
 enum update_sock_option 
 {
@@ -50,9 +49,10 @@ std::vector<ARPPair> arp_pair_vec;					//(can't have duplicates)
 ChildProcess routing_deamon;
 AnonymousSocket update_sock;
 AnonymousSocket lookup_sock;
+std::queue<MIPFrame> lookup_queue;					//buffer to hold frames pending lookup
 const int ARP_TIMEOUT = 2000;						//in ms
 
-CircleBuffer<int, 10> buf;
+
 
 /*
 Send local mip discovery to update_sock.
@@ -230,9 +230,9 @@ void receiveUpdateSock()
 	update_sock.read(frame.getMsg(), ad_size);
 	
 	auto pair_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == dest_mip; });
-	if (pair_it == arp_pair_vec.end()) {
-		throw std::runtime_error("Should have found pair");
-	}
+	//if (pair_it == arp_pair_vec.end()) {
+	//	throw std::runtime_error("Should have found pair");
+	//}
 	ARPPair & pair = (*pair_it);
 
 	frame.setMipTRA(MIPFrame::R);
@@ -312,6 +312,12 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 		update_sock.write(reinterpret_cast<char*>(&ad_size), sizeof(ad_size));
 		update_sock.write(mip_frame.getMsg(), ad_size);
 		break;
+	case MIPFrame::T:
+		//cache frame in lookup_queue
+		//send:
+		//	mip
+		
+		break;
 	default:
 		throw std::runtime_error("Invalid TRA");
 		break;
@@ -371,6 +377,13 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 	
+	//signal
+	struct sigaction sa;
+	sa.sa_handler = &sigintHandler;
+	if (sigaction(SIGINT, &sa, NULL) == -1) {
+		throw LinuxException::Error("sigaction()");
+	}
+
 	//Connect transport_deamon
 
 	//Connect routing_deamon
@@ -396,13 +409,6 @@ int main(int argc, char** argv)
 			mip_vec.push_back(std::atoi(argv[i]));
 		}
 		initRawSock(mip_vec);
-	}
-
-	//signal
-	struct sigaction sa;
-	sa.sa_handler = &sigintHandler;
-	if (sigaction(SIGINT, &sa, NULL) == -1) {
-		throw LinuxException::Error("sigaction()");
 	}
 	
 	//epoll

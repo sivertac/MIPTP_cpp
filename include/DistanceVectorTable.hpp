@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <cstring>
+#include <mutex>
 
 //local
 #include "AddressTypes.hpp"
@@ -118,8 +119,9 @@ public:
 	*/
 	std::string toString();
 
+	std::vector<Column> m_data;		//container
 private:
-	std::vector<Column> m_data;
+	std::mutex m_data_mutex;
 };
 
 #endif // !DistanceVectorTable_HEADER

@@ -5,6 +5,7 @@
 #define CircleBuffer_HEADER
 
 #include <array>
+#include <iterator>
 
 template <typename T, std::size_t S>
 class CircleBuffer
@@ -13,16 +14,23 @@ public:
 	/*
 	Constructor.
 	*/
-	CircleBuffer();
+	CircleBuffer() :
+		m_head(0),
+		m_tail(0)
+	{
+	}
 
 	/*
 	Push element on head.
 	Parameters:
 		element
 	Return:
-		index of pushed element
+		void
 	*/
-	void push(T element);
+	void push(T element)
+	{
+
+	}
 
 	/*
 	Pop tail.
@@ -47,9 +55,9 @@ public:
 	Return:
 		index of head
 	*/
-	std::size_t getHead()
+	typename std::array<T, S>::iterator getHead()
 	{
-		return m_head
+		return m_data.begin() + m_head;
 	}
 
 	/*
@@ -58,9 +66,9 @@ public:
 	Return:
 		index of tail
 	*/
-	std::size_t getTail()
+	typename std::array<T, S>::iterator getTail()
 	{
-		return m_tail;
+		return m_data.begin() + m_tail;
 	}
 
 	/*
@@ -69,17 +77,9 @@ public:
 	Return:
 		number of elements
 	*/
-	std::size_t getSize()
+	std::size_t size()
 	{
-		if (empty()) {
-			return 0;
-		}
-		else if (m_tail < m_head) {
-			return m_head - m_tail;
-		}
-		else {
-			return (m_head + S) - m_tail;
-		}
+		return m_size;
 	}
 
 	/*
@@ -105,7 +105,7 @@ public:
 	}
 private:
 	std::array<T, S> m_data;
-	std::array<bool, S> m_used;
+	//std::array<bool, S> m_used;
 	std::size_t m_size;
 	std::size_t m_head;
 	std::size_t m_tail;

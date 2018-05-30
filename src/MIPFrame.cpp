@@ -214,6 +214,11 @@ char* MIPFrame::getMsg()
 	return m_data.data() + FRAME_HEADER_SIZE;
 }
 
+void MIPFrame::swap(MIPFrame & other)
+{
+	m_data.swap(other.m_data);
+}
+
 std::string MIPFrame::toString()
 {
 	std::ostringstream ss;

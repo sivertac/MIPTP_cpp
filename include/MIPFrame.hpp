@@ -224,6 +224,15 @@ public:
 	char* getData();
 
 	/*
+	Exchanges underlying container with other frame.
+	Parameters:
+		other		ref to frame the swap
+	Return:
+		void
+	*/
+	void swap(MIPFrame & other);
+
+	/*
 	To string (for testing).
 	Parameters:
 	Return:
