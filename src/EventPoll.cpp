@@ -3,27 +3,26 @@
 
 #include "../include/EventPoll.hpp"
 
-EventPoll::EventPoll() :
-	m_event_vector(max_event)
+EventPoll::EventPoll() : 
+	m_closed(true)
 {
-	m_fd = epoll_create(100);
+}
+
+EventPoll::EventPoll(int init)
+{
+	m_fd = epoll_create(init);
 	if (m_fd == -1) {
 		throw LinuxException::Error("epoll_create()");
 	}
-
+	m_closed = false;
 }
 
-EventPoll::~EventPoll()
-{
-	close(m_fd);
-}
-
-EventPoll::WaitState EventPoll::wait(int timeout)
+EventPoll::WaitState EventPoll::wait(std::size_t max_event, int timeout)
 {
 	if (m_event_vector.size() < max_event) {
 		m_event_vector.resize(max_event);
 	}
-	int e_size = epoll_wait(m_fd, m_event_vector.data(), max_event, timeout);
+	int e_size = epoll_wait(m_fd, m_event_vector.data(), static_cast<int>(max_event), timeout);
 	if (e_size > 0) {
 		m_event_vector.resize(e_size);
 		return Okay;
@@ -33,13 +32,20 @@ EventPoll::WaitState EventPoll::wait(int timeout)
 		return Timeout;
 	}
 	else {
+		m_closed = true;
 		return Error;
 	}
 }
 
-EventPoll::WaitState EventPoll::wait()
+EventPoll::WaitState EventPoll::wait(std::size_t max_event)
 {
-	return wait(-1);
+	return wait(max_event, -1);
+}
+
+void EventPoll::closeResources()
+{
+	m_closed = true;
+	close(m_fd);
 }
 
 void EventPoll::add(int fd)
@@ -59,4 +65,9 @@ void EventPoll::remove(int fd)
 	if (epoll_ctl(m_fd, EPOLL_CTL_DEL, fd, &ev)) {
 		throw LinuxException::Error("epoll_ctl()");
 	}
+}
+
+bool EventPoll::isClosed()
+{
+	return m_closed;
 }

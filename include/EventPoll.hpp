@@ -31,23 +31,36 @@ public:
 
 	/*
 	Construtor.
+	Not a valid epoll.
 	*/
 	EventPoll();
-
+	
 	/*
-	Deconstructor.
+	Constructor.
+	Valid epoll.
+	Parameters:
+		epoll_init		value to init epoll ( see epoll_create(2) )
 	*/
-	~EventPoll();
+	EventPoll(int init);
 
 	/*
 	Wait until one or more fd is ready (will block).
 	Parameters:
+		max_event	max number of events to pull
 		timeout		epoll timeout parameter
 	Return:
 		WaitState enum
 	*/
-	WaitState wait(int timeout);
-	WaitState wait();
+	WaitState wait(std::size_t max_event, int timeout);
+	WaitState wait(std::size_t max_event);
+
+	/*
+	Close epoll (makes m_fd invalid).
+	Parameters:
+	Return:
+		void
+	*/
+	void closeResources();
 
 	/*
 	Add file descriptor to epoll.
@@ -82,6 +95,14 @@ public:
 	void remove(int fd);
 
 	/*
+	Check if epoll is closed.
+	Parameters:
+	Return:
+		if true close, else valid
+	*/
+	bool isClosed();
+
+	/*
 	Remove friend from EventPoll.
 	Parameters:
 		friend	ref to friend that has a m_fd member
@@ -100,7 +121,7 @@ public:
 	std::vector<struct epoll_event> m_event_vector;
 private:
 	int m_fd;
-	static const std::size_t max_event = 20;
+	bool m_closed;
 };
 
 #endif

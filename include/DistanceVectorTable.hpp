@@ -36,17 +36,6 @@ public:
 	static const Cost HOP_COST = 1;
 
 	/*
-	Add entry to table.
-	Parameters:
-		to
-		via
-		cost
-	Return:
-		void
-	*/
-	void add(MIPAddress to, MIPAddress via, Cost cost);
-
-	/*
 	Set cost of all entrys that has via set to 'via' to infinity.
 	Parameters:
 		via
@@ -54,14 +43,6 @@ public:
 		void
 	*/
 	void setViaInfinity(MIPAddress via);
-
-	/*
-	Clear all elements.
-	Parameters:
-	Return:
-		void
-	*/
-	void clear();
 
 	/*
 	Pack advertisment for transmission.
@@ -96,11 +77,22 @@ public:
 	/*
 	Find Column with 'to'.
 	Parameters:
-		to
+		c		ref to column to fill if we find one
+		to		
 	Return:
-		iterator
+		true if Column exits
+		false if Column doesn't exist
 	*/
-	std::vector<Column>::iterator findTo(MIPAddress to);
+	bool findTo(Column & c, MIPAddress to);
+
+	/*
+	Add local mip to table.
+	Parameters:
+		mip
+	Return:
+		void
+	*/
+	void addLocalMip(MIPAddress mip);
 
 	/*
 	Add arp discovery to table.
@@ -119,9 +111,20 @@ public:
 	*/
 	std::string toString();
 
-	std::vector<Column> m_data;		//container
 private:
-	std::mutex m_data_mutex;
+	/*
+	Add entry to table.
+	Parameters:
+		to
+		via
+		cost
+	Return:
+		void
+	*/
+	void add(MIPAddress to, MIPAddress via, Cost cost);
+
+	std::vector<Column> m_data;		//container
+	std::mutex m_mutex;				//mutex for m_data
 };
 
 #endif // !DistanceVectorTable_HEADER

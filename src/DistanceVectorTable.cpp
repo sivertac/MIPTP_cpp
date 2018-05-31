@@ -5,7 +5,6 @@
 
 void DistanceVectorTable::add(MIPAddress to, MIPAddress via, Cost cost)
 {
-	std::lock_guard<std::mutex> lock(m_data_mutex);
 	Column c;
 	c.to = to;
 	c.via = via;
@@ -15,7 +14,7 @@ void DistanceVectorTable::add(MIPAddress to, MIPAddress via, Cost cost)
 
 void DistanceVectorTable::setViaInfinity(MIPAddress via)
 {
-	std::lock_guard<std::mutex> lock(m_data_mutex);
+	std::lock_guard<std::mutex> lock(m_mutex);
 	for (Column & c : m_data) {
 		if (c.via == via) {
 			c.cost = INF_COST;
@@ -23,15 +22,9 @@ void DistanceVectorTable::setViaInfinity(MIPAddress via)
 	}
 }
 
-void DistanceVectorTable::clear()
-{
-	std::lock_guard<std::mutex> lock(m_data_mutex);
-	m_data.clear();
-}
-
 void DistanceVectorTable::packAdvertisment(std::vector<char>& buf, MIPAddress dest_mip)
 {
-	std::lock_guard<std::mutex> lock(m_data_mutex);
+	std::lock_guard<std::mutex> lock(m_mutex);
 	//size 2 byte
 	//ad
 	std::uint16_t size;
@@ -49,7 +42,7 @@ void DistanceVectorTable::packAdvertisment(std::vector<char>& buf, MIPAddress de
 
 void DistanceVectorTable::unpackAdvertisment(std::vector<char>& buf)
 {
-	std::lock_guard<std::mutex> lock(m_data_mutex);
+	std::lock_guard<std::mutex> lock(m_mutex);
 	std::uint16_t size;
 	std::memcpy(&size, buf.data(), sizeof(size));
 	if (m_data.size() != size) {
@@ -65,7 +58,7 @@ void DistanceVectorTable::unpackAdvertisment(std::vector<char>& buf)
 
 bool DistanceVectorTable::update(MIPAddress sender, DistanceVectorTable & advert)
 {
-	std::lock_guard<std::mutex> lock(m_data_mutex);
+	std::lock_guard<std::mutex> lock(m_mutex);
 	bool changed = false;
 	for (Column & advert_c : advert.m_data) {
 		Cost cost;
@@ -75,8 +68,7 @@ bool DistanceVectorTable::update(MIPAddress sender, DistanceVectorTable & advert
 		else {
 			cost = INF_COST;
 		}
-		//auto table_it = std::find_if(m_data.begin(), m_data.end(), [&](Column & c) {return c.to == advert_c.to; });
-		auto table_it = findTo(advert_c.to);
+		auto table_it = std::find_if(m_data.begin(), m_data.end(), [&](Column & c) {return c.to == advert_c.to; });
 		if (table_it == m_data.end()) {
 			add(advert_c.to, sender, cost);
 			changed = true;
@@ -90,16 +82,29 @@ bool DistanceVectorTable::update(MIPAddress sender, DistanceVectorTable & advert
 	return changed;
 }
 
-std::vector<DistanceVectorTable::Column>::iterator DistanceVectorTable::findTo(MIPAddress to)
+bool DistanceVectorTable::findTo(Column & c, MIPAddress to)
 {
-	std::lock_guard<std::mutex> lock(m_data_mutex);
-	return std::find_if(m_data.begin(), m_data.end(), [&](Column & c) {return c.to == to; });
+	std::lock_guard<std::mutex> lock(m_mutex);
+	auto it = std::find_if(m_data.begin(), m_data.end(), [&](Column & c) {return c.to == to; });
+	if (it != m_data.end()) {
+		c = (*it);
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+void DistanceVectorTable::addLocalMip(MIPAddress mip)
+{
+	std::lock_guard<std::mutex> lock(m_mutex);
+	add(mip, mip, 0);
 }
 
 void DistanceVectorTable::addArpDiscovery(MIPAddress mip)
 {
-	std::lock_guard<std::mutex> lock(m_data_mutex);
-	auto it = findTo(mip);
+	std::lock_guard<std::mutex> lock(m_mutex);
+	auto it = std::find_if(m_data.begin(), m_data.end(), [&](Column & c) {return c.to == mip; });
 	if (it == m_data.end()) {
 		add(mip, mip, HOP_COST);
 	}
@@ -111,7 +116,7 @@ void DistanceVectorTable::addArpDiscovery(MIPAddress mip)
 
 std::string DistanceVectorTable::toString()
 {
-	std::lock_guard<std::mutex> lock(m_data_mutex);
+	std::lock_guard<std::mutex> lock(m_mutex);
 	std::ostringstream ss;
 	ss << std::left << std::setw(6) << "To:" << std::left << std::setw(6) << "Via:" << std::left << std::setw(6) << "Cost:";
 	for (Column & p : m_data) {

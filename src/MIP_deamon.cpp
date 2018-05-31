@@ -47,12 +47,12 @@ Globals
 std::vector<RawSock::MIPRawSock> raw_sock_vec;		//(must keep order intact so not to invalidate ARPPairs)
 std::vector<ARPPair> arp_pair_vec;					//(can't have duplicates)
 ChildProcess routing_deamon;
+EventPoll epoll;
+AnonymousSocket transport_sock;
 AnonymousSocket update_sock;
 AnonymousSocket lookup_sock;
 std::queue<MIPFrame> lookup_queue;					//buffer to hold frames pending lookup
 const int ARP_TIMEOUT = 2000;						//in ms
-
-
 
 /*
 Send local mip discovery to update_sock.
@@ -201,7 +201,27 @@ Global:
 */
 void receiveLookupSock()
 {
-
+	bool success;
+	lookup_sock.read(reinterpret_cast<char*>(&success), sizeof(success));
+	if (success) {
+		MIPAddress via;
+		lookup_sock.read(reinterpret_cast<char*>(&via), sizeof(via));
+		auto pair_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == via; });
+		if (pair_it != arp_pair_vec.end()) {
+			ARPPair pair = (*pair_it);
+			MIPFrame & frame = lookup_queue.front();
+			MACAddress eth_dest = pair.mac;
+			MACAddress eth_source = pair.sock->getMac();
+			frame.setEthDest(eth_dest);
+			frame.setEthSource(eth_source);
+			frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
+			pair.sock->sendMipFrame(frame);
+		}
+		lookup_queue.pop();
+	}
+	else {
+		lookup_queue.pop();
+	}
 }
 
 /*
@@ -233,26 +253,23 @@ void receiveUpdateSock()
 	//if (pair_it == arp_pair_vec.end()) {
 	//	throw std::runtime_error("Should have found pair");
 	//}
-	ARPPair & pair = (*pair_it);
-
-	frame.setMipTRA(MIPFrame::R);
-	frame.setMipDest(pair.mip);
-	frame.setMipSource(pair.sock->getMip());
-	frame.setMipTTL(0xff);
-
-	MACAddress eth_dest = pair.mac;
-	MACAddress eth_source = pair.sock->getMac();
-
-	frame.setEthDest(eth_dest);
-	frame.setEthSource(eth_source);
-	frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
-
-	pair.sock->sendMipFrame(frame);
-
-	//std::cout << "Send ad on raw sock:\n";
-	//std::cout << "ad_size: " << ad_size << "\n";
-	//std::cout << "ad_length field: " << (int)*reinterpret_cast<std::uint16_t*>(frame.getMsg()) << "\n";;
-	//std::cout << "frame msg size: " << frame.getMsgSize() << "\n";
+	if (pair_it != arp_pair_vec.end()) {
+		ARPPair & pair = (*pair_it);
+		frame.setMipTRA(MIPFrame::R);
+		frame.setMipDest(pair.mip);
+		frame.setMipSource(pair.sock->getMip());
+		frame.setMipTTL(0xff);
+		MACAddress eth_dest = pair.mac;
+		MACAddress eth_source = pair.sock->getMac();
+		frame.setEthDest(eth_dest);
+		frame.setEthSource(eth_source);
+		frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
+		pair.sock->sendMipFrame(frame);
+		//std::cout << "Send ad on raw sock:\n";
+		//std::cout << "ad_size: " << ad_size << "\n";
+		//std::cout << "ad_length field: " << (int)*reinterpret_cast<std::uint16_t*>(frame.getMsg()) << "\n";;
+		//std::cout << "frame msg size: " << frame.getMsgSize() << "\n";
+	}
 }
 
 /*
@@ -316,7 +333,8 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 		//cache frame in lookup_queue
 		//send:
 		//	mip
-		
+		lookup_queue.push(mip_frame);
+		update_sock.write(reinterpret_cast<char*>(&mip), sizeof(mip));
 		break;
 	default:
 		throw std::runtime_error("Invalid TRA");
@@ -363,7 +381,7 @@ Signal function.
 */
 void sigintHandler(int signum)
 {
-	//transport_deamon will handle this
+	epoll.closeResources();
 }
 
 /*
@@ -385,6 +403,7 @@ int main(int argc, char** argv)
 	}
 
 	//Connect transport_deamon
+	transport_sock = AnonymousSocket(argv[1]);
 
 	//Connect routing_deamon
 	{
@@ -412,10 +431,11 @@ int main(int argc, char** argv)
 	}
 	
 	//epoll
-	EventPoll epoll;
+	epoll = EventPoll(100);
 	for (auto & sock : raw_sock_vec) {
 		epoll.addFriend<RawSock::MIPRawSock>(sock);
 	}
+	epoll.addFriend<AnonymousSocket>(transport_sock);
 	epoll.addFriend<AnonymousSocket>(update_sock);
 	epoll.addFriend<AnonymousSocket>(lookup_sock);
 
@@ -435,7 +455,7 @@ int main(int argc, char** argv)
 	timeout_timer.setExpirationFromNow(ARP_TIMEOUT);
 	epoll.addFriend(timeout_timer);
 
-	while (epoll.wait() == EventPoll::Okay) {
+	while (epoll.wait(20) == EventPoll::Okay) {
 		for (auto & ev : epoll.m_event_vector) {
 			int in_fd = ev.data.fd;
 			//check
@@ -455,6 +475,11 @@ int main(int argc, char** argv)
 					sendBroadcastFrame(sock);
 				}
 				timeout_timer.setExpirationFromNow(ARP_TIMEOUT);
+			}
+			else if (in_fd == update_sock.getFd()) {
+
+				std::cout << "transport_sock\n";
+
 			}
 			else if (in_fd == update_sock.getFd()) {
 				receiveUpdateSock();

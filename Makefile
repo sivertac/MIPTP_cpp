@@ -4,7 +4,7 @@
 CC = g++
 FLAGS = -Wall -Werror -std=c++11 -DLINUX
 
-BINARIES = main MIP_deamon routing_deamon
+BINARIES = main MIP_deamon routing_deamon transport_deamon
 OBJECTS = MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o DistanceVectorTable.o TimerWrapper.o
 
 FILES =	$(BINARIES) $(OBJECTS)
@@ -20,6 +20,9 @@ MIP_deamon: src/MIP_deamon.cpp $(OBJECTS)
 
 routing_deamon: src/routing_deamon.cpp $(OBJECTS)
 	$(CC) $(FLAGS) -o routing_deamon src/routing_deamon.cpp $(OBJECTS) -pthread
+
+transport_deamon: src/transport_deamon.cpp $(OBJECTS)
+	$(CC) $(FLAGS) -o transport_deamon src/transport_deamon.cpp $(OBJECTS)
 
 #objects
 MIPFrame.o: src/MIPFrame.cpp include/MIPFrame.hpp
