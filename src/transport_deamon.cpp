@@ -14,19 +14,86 @@
 #include "../include/AddressTypes.hpp"
 #include "../include/CrossIPC.hpp"
 #include "../include/CrossForkExec.hpp"
+#include "../include/EventPoll.hpp"
+#include "../include/ApplicationClient.hpp"
 
 /*
 Globals
 */
 ChildProcess mip_deamon;
+EventPoll epoll;
 AnonymousSocket transport_sock;
+NamedSocket application_sock;
+
+/*
+Send on transport_sock.
+Parameters:
+	dest
+	msg
+Return:
+	void
+Global:
+	transport_sock
+*/
+void sendTransportSock(MIPAddress dest, std::vector<char> & msg)
+{
+	//send
+	//	dest
+	//	msg size
+	//	msg
+	std::size_t msg_size = msg.size();
+	transport_sock.write(reinterpret_cast<char*>(&dest), sizeof(dest));
+	transport_sock.write(reinterpret_cast<char*>(&msg_size), sizeof(msg_size));
+	transport_sock.write(reinterpret_cast<char*>(msg.data()), msg_size);
+}
+
+/*
+Receive on application_sock.
+Parameters:
+Return:
+	void
+Global:
+	application_sock
+*/
+void receiveApplicationSock()
+{
+
+}
+
+/*
+Receive on transport_sock.
+Parameters:
+Return:
+	void
+Global:
+	transport_sock
+*/
+void receiveTransportSock()
+{
+	//receive
+	//	source
+	//	msg size
+	//	msg
+	MIPAddress source_mip;
+	std::size_t msg_size;
+	static std::vector<char> msg;
+	transport_sock.read(reinterpret_cast<char*>(&source_mip), sizeof(source_mip));
+	transport_sock.read(reinterpret_cast<char*>(&msg_size), sizeof(msg_size));
+	if (msg.size() != msg_size) {
+		msg.resize(msg_size);
+	}
+	transport_sock.read(msg.data(), msg_size);
+
+	//test
+	std::cout << std::string(msg.data()) << "\n";
+}
 
 /*
 Signal function.
 */
 void sigintHandler(int signum)
 {
-	
+	epoll.closeResources();
 }
 
 /*
@@ -60,7 +127,34 @@ int main(int argc, char** argv)
 		pair.second.closeResources();
 	}
 
+	//socket application
+	{
+		std::string name(argv[1]);
+		application_sock = NamedSocket(name);
+	}
+
+	//epoll
+	epoll = EventPoll(100);
+
+	epoll.addFriend<AnonymousSocket>(transport_sock);
+	epoll.addFriend<NamedSocket>(application_sock);
+
+	while (epoll.wait(20) == EventPoll::Okay) {
+		for (auto & ev : epoll.m_event_vector) {
+			int in_fd = ev.data.fd;
+			if (in_fd == transport_sock.getFd()) {
+				receiveTransportSock();
+			}
+			else if (in_fd == application_sock.getFd()) {
+				receiveApplicationSock();
+			}
+		}
+	}
+
 	std::cout << "transport_deamon joining mip_deamon\n";
+
+	transport_sock.closeResources();
+	application_sock.closeResources();
 
 	mip_deamon.join();
 
@@ -68,3 +162,6 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+
+
+

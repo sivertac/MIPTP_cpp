@@ -5,7 +5,10 @@ CC = g++
 FLAGS = -Wall -Werror -std=c++11 -DLINUX
 
 BINARIES = main MIP_deamon routing_deamon transport_deamon
-OBJECTS = MIPFrame.o CrossForkExec.o CrossIPC.o RawSock.o AddressTypes.o LinuxException.o EventPoll.o DistanceVectorTable.o TimerWrapper.o
+
+OBJECTS =	MIPFrame.o CrossForkExec.o CrossIPC.o \
+			RawSock.o AddressTypes.o LinuxException.o \
+			EventPoll.o DistanceVectorTable.o TimerWrapper.o
 
 FILES =	$(BINARIES) $(OBJECTS)
 

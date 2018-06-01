@@ -5,8 +5,7 @@
 #ifndef CrossIPC_HEADER
 #define CrossIPC_HEADER
 
-//includes
-//common
+//C++
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -41,7 +40,6 @@ class BrokenPipeException : public std::exception
 class AnonymousSocket
 {
 public:
-
 	/*
 	Constructor.
 	*/
@@ -171,6 +169,13 @@ public:
 	/*
 	Constructor.
 	*/
+	NamedSocket();
+
+	/*
+	Constructor.
+	Parameters:
+		path		name of socket
+	*/
 	NamedSocket(std::string & path);
 
 	/*
@@ -209,6 +214,16 @@ public:
 private:
 	int m_fd;
 	struct sockaddr_un m_sock_address;
+
+	/*
+	Name copy mechanism.
+	Parameters:
+		target
+		source
+	Return:
+		void
+	*/
+	static void nameCopy(struct sockaddr_un & target, std::string & source);
 };
 
 #endif

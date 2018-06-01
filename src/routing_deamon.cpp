@@ -59,7 +59,6 @@ Return:
 */
 void shutdownThreads()
 {
-	std::cout << "shutdownThreads!!!\n";
 	{
 		std::lock_guard<std::mutex> update_lock(update_mutex);
 		{

@@ -182,13 +182,16 @@ std::string AnonymousSocket::readString()
 	return ss.str();
 }
 
+NamedSocket::NamedSocket()
+{
+}
+
 //LINUX
 NamedSocket::NamedSocket(std::string & path)
 {
-	assert(path.size() < sizeof(m_sock_address.sun_path) - 1);
+	std::memset(&m_sock_address, 0, sizeof(m_sock_address));
 	m_sock_address.sun_family = AF_UNIX;
-	std::memset(m_sock_address.sun_path, 0, sizeof(m_sock_address.sun_path));
-	std::strcpy(m_sock_address.sun_path, path.c_str());
+	nameCopy(m_sock_address, path);
 	m_fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (m_fd == -1) {
 		throw LinuxException::Error("socket()");
@@ -228,18 +231,29 @@ int NamedSocket::getFd()
 AnonymousSocket NamedSocket::connectToNamedSocket(std::string & path)
 {
 	struct sockaddr_un address;
-	assert(path.size() < sizeof(address.sun_path) - 1);
+	std::memset(&address, 0, sizeof(address));
 	int connect_fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (connect_fd == -1) {
 		throw LinuxException::Error("socket()");
 	}
-	std::memset(&address, 0, sizeof(address));
 	address.sun_family = AF_UNIX;
-	std::strcpy(address.sun_path, path.c_str());
+	nameCopy(address, path);
 	if (connect(connect_fd, (struct sockaddr*)&address, sizeof(address)) == -1) {
 		throw LinuxException::Error("connect()");
 	}
 	return AnonymousSocket(connect_fd);
+}
+
+void NamedSocket::nameCopy(sockaddr_un & target, std::string & source)
+{
+	std::memset(&target.sun_path, 0, sizeof(target.sun_path));
+	if (source.size() + 1 < sizeof(target.sun_path)) {
+		std::memcpy(&target.sun_path, source.c_str(), source.size() + 1);
+	}
+	else {
+		std::memcpy(&target.sun_path, source.c_str(), sizeof(target.sun_path) - 1);
+		target.sun_path[sizeof(target.sun_path) - 1] = '\0';
+	}
 }
 
 

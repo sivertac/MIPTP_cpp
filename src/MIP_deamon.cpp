@@ -51,7 +51,7 @@ EventPoll epoll;
 AnonymousSocket transport_sock;
 AnonymousSocket update_sock;
 AnonymousSocket lookup_sock;
-std::queue<MIPFrame> lookup_queue;					//buffer to hold frames pending lookup
+std::queue<std::pair<bool, MIPFrame>> lookup_queue;	//pair <true if source mip is set, frame>
 const int ARP_TIMEOUT = 2000;						//in ms
 
 /*
@@ -138,7 +138,7 @@ void addARPPair(RawSock::MIPRawSock & sock, MIPAddress mip, MACAddress mac)
 	pair.sock = &sock;
 	arp_pair_vec.push_back(pair);
 
-	printARPTable();
+	printARPTable();		//debug
 }
 
 /*
@@ -156,7 +156,6 @@ void sendResponseFrame(ARPPair & pair)
 	mip_frame.setMipSource(pair.sock->getMip());
 	mip_frame.setMsgSize(0);
 	mip_frame.setMipTTL(0xff);
-	
 	MACAddress dest = pair.mac;
 	MACAddress source = pair.sock->getMac();
 	mip_frame.setEthDest(dest);
@@ -181,7 +180,6 @@ void sendBroadcastFrame(RawSock::MIPRawSock & sock)
 	mip_frame.setMipSource(sock.getMip());
 	mip_frame.setMsgSize(0);
 	mip_frame.setMipTTL(0xff);
-
 	static MACAddress dest{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 	MACAddress source = sock.getMac();
 	mip_frame.setEthDest(dest);
@@ -189,6 +187,36 @@ void sendBroadcastFrame(RawSock::MIPRawSock & sock)
 	mip_frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
 	mip_frame.setMsg(mip_frame.getData(), mip_frame.getSize());
 	sock.sendMipFrame(mip_frame);
+}
+
+/*
+Receive on transport_sock.
+Parameters:
+Return:
+	void
+Global:
+	transport_sock
+	lookup_queue
+*/
+void receiveTransportSock()
+{
+	static MIPFrame frame;
+	MIPAddress dest;
+	std::size_t msg_size;
+	transport_sock.read(reinterpret_cast<char*>(&dest), sizeof(dest));
+	transport_sock.read(reinterpret_cast<char*>(&msg_size), sizeof(msg_size));
+	if (frame.getMsgSize() != msg_size) {
+		frame.setMsgSize(msg_size);
+	}
+	transport_sock.read(frame.getMsg(), msg_size);
+	frame.setMipTRA(MIPFrame::T);
+	frame.setMipDest(dest);
+	frame.setMipTTL(0xff);
+	frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
+	lookup_queue.emplace(false, frame);
+	lookup_sock.write(reinterpret_cast<char*>(&dest), sizeof(dest));
+
+	std::cout << "MIP_deamon receive transport_sock\n";
 }
 
 /*
@@ -209,13 +237,18 @@ void receiveLookupSock()
 		auto pair_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == via; });
 		if (pair_it != arp_pair_vec.end()) {
 			ARPPair pair = (*pair_it);
-			MIPFrame & frame = lookup_queue.front();
+			MIPFrame & frame = lookup_queue.front().second;
+			if (!lookup_queue.front().first) {
+				frame.setMipSource(pair.sock->getMip());
+			}
 			MACAddress eth_dest = pair.mac;
 			MACAddress eth_source = pair.sock->getMac();
 			frame.setEthDest(eth_dest);
 			frame.setEthSource(eth_source);
 			frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
 			pair.sock->sendMipFrame(frame);
+
+			std::cout << "MIP_deamon sending transport frame to mip: " << (int)frame.getMipDest() << "\n";
 		}
 		lookup_queue.pop();
 	}
@@ -242,13 +275,10 @@ void receiveUpdateSock()
 	static MIPFrame frame;
 	MIPAddress dest_mip;
 	std::size_t ad_size;
-
 	update_sock.read(reinterpret_cast<char*>(&dest_mip), sizeof(dest_mip));
 	update_sock.read(reinterpret_cast<char*>(&ad_size), sizeof(ad_size));
-	
 	frame.setMsgSize(ad_size);
 	update_sock.read(frame.getMsg(), ad_size);
-	
 	auto pair_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == dest_mip; });
 	//if (pair_it == arp_pair_vec.end()) {
 	//	throw std::runtime_error("Should have found pair");
@@ -286,19 +316,18 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 	static MIPFrame mip_frame;
 	sock.recvMipFrame(mip_frame);
 	int tra = mip_frame.getMipTRA();
-	MIPAddress mip = mip_frame.getMipSource();
-
+	MIPAddress source_mip = mip_frame.getMipSource();
+	MIPAddress dest_mip = mip_frame.getMipDest();
 	std::uint8_t option;
-	std::size_t ad_size;
-
+	std::size_t msg_size = mip_frame.getMsgSize();
 	std::vector<ARPPair>::iterator arp_it;
 	switch (tra)
 	{
 	case MIPFrame::A:
-		arp_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == mip; });
+		arp_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == source_mip; });
 		if (arp_it == arp_pair_vec.end()) {
 			addARPPair(sock, mip_frame.getMipSource(), mip_frame.getEthSource());
-			sendArpDiscovery(mip);
+			sendArpDiscovery(source_mip);
 			sendResponseFrame(arp_pair_vec.back());
 		}
 		else {
@@ -307,10 +336,10 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 		}
 		break;
 	case MIPFrame::ZERO:
-		arp_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == mip; });
+		arp_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == source_mip; });
 		if (arp_it == arp_pair_vec.end()) {
 			addARPPair(sock, mip_frame.getMipSource(), mip_frame.getEthSource());
-			sendArpDiscovery(mip);
+			sendArpDiscovery(source_mip);
 		}
 		else {
 			arp_it->reply = true;
@@ -322,19 +351,37 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 		//	from
 		//	ad size
 		//	ad
-		ad_size = mip_frame.getMsgSize();
 		option = update_sock_option::ADVERTISEMENT;
 		update_sock.write(reinterpret_cast<char*>(&option), sizeof(std::uint8_t));
-		update_sock.write(reinterpret_cast<char*>(&mip), sizeof(mip));
-		update_sock.write(reinterpret_cast<char*>(&ad_size), sizeof(ad_size));
-		update_sock.write(mip_frame.getMsg(), ad_size);
+		update_sock.write(reinterpret_cast<char*>(&source_mip), sizeof(source_mip));
+		update_sock.write(reinterpret_cast<char*>(&msg_size), sizeof(msg_size));
+		update_sock.write(mip_frame.getMsg(), msg_size);
 		break;
 	case MIPFrame::T:
 		//cache frame in lookup_queue
 		//send:
 		//	mip
-		lookup_queue.push(mip_frame);
-		update_sock.write(reinterpret_cast<char*>(&mip), sizeof(mip));
+
+		std::cout << "MIP_deamon received tranport frame from mip: "<< (int)mip_frame.getMipSource() << "\n";
+
+		if (std::find_if(raw_sock_vec.begin(), raw_sock_vec.end(), [&](RawSock::MIPRawSock & s) { return s.getMip() == dest_mip; }) == raw_sock_vec.end()) {
+			int ttl = mip_frame.getMipTTL();
+			if (ttl <= 0) {
+				//drop frame
+				std::cout << "ttl 0, dropping frame\n";
+			}
+			else {
+				mip_frame.setMipTTL(ttl - 1);
+				lookup_queue.emplace(true, mip_frame);
+				lookup_sock.write(reinterpret_cast<char*>(&dest_mip), sizeof(dest_mip));
+			}
+		}
+		else {
+			//send to transport deamon
+			transport_sock.write(reinterpret_cast<char*>(&source_mip), sizeof(source_mip));
+			transport_sock.write(reinterpret_cast<char*>(&msg_size), sizeof(msg_size));
+			transport_sock.write(mip_frame.getMsg(), msg_size);
+		}
 		break;
 	default:
 		throw std::runtime_error("Invalid TRA");
@@ -476,10 +523,8 @@ int main(int argc, char** argv)
 				}
 				timeout_timer.setExpirationFromNow(ARP_TIMEOUT);
 			}
-			else if (in_fd == update_sock.getFd()) {
-
-				std::cout << "transport_sock\n";
-
+			else if (in_fd == transport_sock.getFd()) {
+				receiveTransportSock();
 			}
 			else if (in_fd == update_sock.getFd()) {
 				receiveUpdateSock();
