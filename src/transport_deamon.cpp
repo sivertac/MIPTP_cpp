@@ -15,7 +15,7 @@
 #include "../include/CrossIPC.hpp"
 #include "../include/CrossForkExec.hpp"
 #include "../include/EventPoll.hpp"
-#include "../include/ApplicationClient.hpp"
+#include "../include/Application.hpp"
 
 /*
 Globals
@@ -24,6 +24,25 @@ ChildProcess mip_deamon;
 EventPoll epoll;
 AnonymousSocket transport_sock;
 NamedSocket application_sock;
+
+/*
+transport protocol:
+	ApplicationServer is listening on Port p1.
+	ApplicationClient sends connect request from Port p2 to ApplicationServer on p1.
+	ApplicationServer replies accept if connection is accepted or not.
+
+2 way communication is possible.
+	
+packet layout:
+	header is always 48 bits long.
+	<packet type: 2 bits> <padding bits: 2 bits> <dest port: 14 bits> <source port: 14 bits> <packet sequence number: 16 bits>
+	
+	packet type:
+		Can be: 
+			01 : connect request
+			10 : connect reply
+			11 : data transmission
+*/
 
 /*
 Send on transport_sock.

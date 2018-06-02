@@ -4,7 +4,8 @@
 #include "../include/CrossIPC.hpp"
 
 
-AnonymousSocket::AnonymousSocket()
+AnonymousSocket::AnonymousSocket() :
+	m_closed(true)
 {
 }
 #ifdef WINDOWS
@@ -102,7 +103,8 @@ void AnonymousSocket::closeResources()
 		
 #elif LINUX
 AnonymousSocket::AnonymousSocket(const int fd) :
-	m_fd(fd)
+	m_fd(fd),
+	m_closed(false)
 {
 }
 	
@@ -144,12 +146,18 @@ std::size_t AnonymousSocket::read(char* buf, std::size_t buf_size)
 
 void AnonymousSocket::closeResources()
 {
+	m_closed = true;
 	close(m_fd);
 }
 
 int AnonymousSocket::getFd()
 {
 	return m_fd;
+}
+
+bool AnonymousSocket::isClosed()
+{
+	return m_closed;
 }
 
 AnonymousSocket::AnonymousSocketPair AnonymousSocket::createAnonymousSocketPair()
@@ -182,7 +190,8 @@ std::string AnonymousSocket::readString()
 	return ss.str();
 }
 
-NamedSocket::NamedSocket()
+NamedSocket::NamedSocket() :
+	m_closed(true)
 {
 }
 
@@ -202,6 +211,7 @@ NamedSocket::NamedSocket(std::string & path)
 	if (listen(m_fd, 100) == -1) {
 		throw LinuxException::Error("listen()");
 	}
+	m_closed = false;
 }
 
 AnonymousSocket NamedSocket::acceptConnection()
@@ -219,6 +229,7 @@ AnonymousSocket NamedSocket::acceptConnection()
 
 void NamedSocket::closeResources()
 {
+	m_closed = true;
 	close(m_fd);
 	unlink(m_sock_address.sun_path);
 }
@@ -226,6 +237,11 @@ void NamedSocket::closeResources()
 int NamedSocket::getFd()
 {
 	return m_fd;
+}
+
+bool NamedSocket::isClosed()
+{
+	return m_closed;
 }
 
 AnonymousSocket NamedSocket::connectToNamedSocket(std::string & path)

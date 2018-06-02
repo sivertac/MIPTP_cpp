@@ -144,6 +144,14 @@ public:
 	*/
 	int getFd();
 
+	/*
+	Check if sock is closed.
+	Parameters:
+	Return:
+		if true close, else valid
+	*/
+	bool isClosed();
+
 	using AnonymousSocketPair = std::pair<AnonymousSocket, AnonymousSocket>;
 	/*
 	Create a AnonymousSocketPair.
@@ -154,13 +162,13 @@ public:
 	static AnonymousSocketPair createAnonymousSocketPair();
 
 private:
-
 #ifdef WINDOWS
 	HANDLE m_read_pipe = NULL;
 	HANDLE m_write_pipe = NULL;
 #elif LINUX
 	int m_fd;
 #endif
+	bool m_closed;
 };
 	
 class NamedSocket
@@ -203,6 +211,14 @@ public:
 	int getFd();
 
 	/*
+	Check if sock is closed.
+	Parameters:
+	Return:
+		if true close, else valid
+	*/
+	bool isClosed();
+
+	/*
 	Connect to a named socket.
 	Parameters:
 		path		name of socket
@@ -213,6 +229,7 @@ public:
 
 private:
 	int m_fd;
+	bool m_closed;
 	struct sockaddr_un m_sock_address;
 
 	/*

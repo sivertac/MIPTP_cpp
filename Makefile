@@ -2,13 +2,14 @@
 #Author: Sivert Andresen Cubedo
 
 CC = g++
-FLAGS = -Wall -Werror -std=c++11 -DLINUX
+FLAGS = -Wall -Werror -std=c++11 -DLINUX -pthread
 
 BINARIES = main MIP_deamon routing_deamon transport_deamon
 
 OBJECTS =	MIPFrame.o CrossForkExec.o CrossIPC.o \
 			RawSock.o AddressTypes.o LinuxException.o \
-			EventPoll.o DistanceVectorTable.o TimerWrapper.o
+			EventPoll.o DistanceVectorTable.o TimerWrapper.o \
+			Application.o MIPTPFrame.o
 
 FILES =	$(BINARIES) $(OBJECTS)
 
@@ -22,7 +23,7 @@ MIP_deamon: src/MIP_deamon.cpp $(OBJECTS)
 	$(CC) $(FLAGS) -o MIP_deamon src/MIP_deamon.cpp $(OBJECTS)
 
 routing_deamon: src/routing_deamon.cpp $(OBJECTS)
-	$(CC) $(FLAGS) -o routing_deamon src/routing_deamon.cpp $(OBJECTS) -pthread
+	$(CC) $(FLAGS) -o routing_deamon src/routing_deamon.cpp $(OBJECTS)
 
 transport_deamon: src/transport_deamon.cpp $(OBJECTS)
 	$(CC) $(FLAGS) -o transport_deamon src/transport_deamon.cpp $(OBJECTS)
@@ -32,7 +33,7 @@ MIPFrame.o: src/MIPFrame.cpp include/MIPFrame.hpp
 	$(CC) $(FLAGS) -c src/MIPFrame.cpp
 
 EventPoll.o: src/EventPoll.cpp include/EventPoll.hpp
-	$(CC) $(FLAGS) -c  src/EventPoll.cpp
+	$(CC) $(FLAGS) -c src/EventPoll.cpp
 
 CrossForkExec.o: src/CrossForkExec.cpp include/CrossForkExec.hpp
 	$(CC) $(FLAGS) -c src/CrossForkExec.cpp
@@ -55,7 +56,11 @@ DistanceVectorTable.o: src/DistanceVectorTable.cpp include/DistanceVectorTable.h
 TimerWrapper.o: src/TimerWrapper.cpp include/TimerWrapper.hpp
 	$(CC) $(FLAGS) -c src/TimerWrapper.cpp
 
+Application.o: src/Application.cpp include/Application.hpp
+	$(CC) $(FLAGS) -c src/Application.cpp
+
+MIPTPFrame.o: src/MIPTPFrame.cpp include/MIPTPFrame.hpp
+	$(CC) $(FLAGS) -c src/MIPTPFrame.cpp
+
 clean:
 	rm $(FILES)
-
-
