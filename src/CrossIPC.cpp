@@ -139,7 +139,12 @@ std::size_t AnonymousSocket::read(char* buf, std::size_t buf_size)
 		throw BrokenPipeException();
 	}
 	else if (ret == -1) {
-		throw LinuxException::Error("recv()");
+		if (errno == EWOULDBLOCK) {
+			throw WouldBlockException();
+		}
+		else {
+			throw LinuxException::Error("recv()");
+		}
 	}
 	return static_cast<std::size_t>(ret);
 }
@@ -158,6 +163,43 @@ int AnonymousSocket::getFd()
 bool AnonymousSocket::isClosed()
 {
 	return m_closed;
+}
+
+void AnonymousSocket::enableNonBlock()
+{
+	int flags;
+	int s;
+	flags = fcntl(m_fd, F_GETFL, 0);
+	if (flags == -1) {
+		throw LinuxException::Error("fcntl()");
+	}
+	flags |= O_NONBLOCK;
+	s = fcntl(m_fd, F_SETFL, flags);
+	if (s == -1) {
+		throw LinuxException::Error("fcntl()");
+	}
+	m_nonblock = true;
+}
+
+void AnonymousSocket::disableNonBlock()
+{
+	int flags;
+	int s;
+	flags = fcntl(m_fd, F_GETFL, 0);
+	if (flags == -1) {
+		throw LinuxException::Error("fcntl()");
+	}
+	flags &= (~O_NONBLOCK);
+	s = fcntl(m_fd, F_SETFL, flags);
+	if (s == -1) {
+		throw LinuxException::Error("fcntl()");
+	}
+	m_nonblock = false;
+}
+
+bool AnonymousSocket::isNonBlock()
+{
+	return m_nonblock;
 }
 
 AnonymousSocket::AnonymousSocketPair AnonymousSocket::createAnonymousSocketPair()

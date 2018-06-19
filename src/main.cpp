@@ -1,27 +1,33 @@
 //main.cpp
 //Author: Sivert Andresen Cubedo
 
+//C++
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <string>
 
-//local
-#include "../include/RawSock.hpp"
-//#include "../include/CrossIPC.hpp"
-//#include "../include/CrossForkExec.hpp"
-#include "../include/EthernetFrame.hpp"
-//#include "../include/MIPFrame.hpp"
+//Local
+#include "../include/MIPFrame.hpp"
+#include "../include/MIPTPFrame.hpp"
+#include "../include/Application.hpp"
 
 int main(int argc, char** argv)
 {
-	auto inter = RawSock::getInterfaceNames(std::vector<int>{ AF_PACKET });
-	for (auto & s : inter) {
-		std::cout << s << "\n";
-	}
-	
-	RawSock::MIPRawSock raw_sock(inter.back(), 1);
-	
+	std::queue<MIPTPFrame> queue;
+	std::vector<char> buffer;
+	auto pair = AnonymousSocket::createAnonymousSocketPair();
+	pair.second.enableNonBlock();
+
+	SlidingWindow::SendWindow<10> send(queue, pair.second, 1, 2);
+	SlidingWindow::ReceiveWindow<10> receive(queue, buffer, 2, 1);
+
+	send.queueFrames();
+
+	std::cout << "queue.size(): " << queue.size() << "\n";
+
+	std::cout << &send << "\n";
+	std::cout << &receive << "\n";
 
 	return 0;
 }

@@ -86,10 +86,6 @@ void MIPFrame::setMipTTL(int ttl)
 	const unsigned long int mask = 0b1111;
 	std::uint32_t* header = reinterpret_cast<std::uint32_t*>(m_data.data() + ETH_HEADER_SIZE);
 	//clear bits
-	//*header &= ~(1UL << 28);
-	//*header &= ~(1UL << 29);
-	//*header &= ~(1UL << 30);
-	//*header &= ~(1UL << 31);
 	*header &= ~(mask << 28);
 	//insert ttl
 	*header |= ((ttl & mask) << 28);
@@ -99,26 +95,24 @@ void MIPFrame::setMsgSize(std::size_t size)
 {
 	const unsigned long int mask = 0b111111111;
 	std::uint32_t* header = reinterpret_cast<std::uint32_t*>(m_data.data() + ETH_HEADER_SIZE);
+	//calc padding
 	std::size_t l, d;
 	std::size_t payload_length;
 	if (size > 0) {
-		l = 4 + size;
-		d = 4 - (l % 4);
-		payload_length = (l + d) / 4;
+		l = size + MIP_HEADER_SIZE;
+		d = l % 4;
+		if (d == 0) {
+			payload_length = l / 4;
+		}
+		else {
+			d = 4 - d;
+			payload_length = (l + d) / 4;
+		}
 	}
 	else {
 		payload_length = 0;
 	}
 	//clear bits
-	//*header &= ~(1UL << 19);
-	//*header &= ~(1UL << 20);
-	//*header &= ~(1UL << 21);
-	//*header &= ~(1UL << 22);
-	//*header &= ~(1UL << 23);
-	//*header &= ~(1UL << 24);
-	//*header &= ~(1UL << 25);
-	//*header &= ~(1UL << 26);
-	//*header &= ~(1UL << 27);
 	*header &= ~(mask << 19);
 	//insert payload_lenght
 	*header |= ((payload_length & mask) << 19);
@@ -206,7 +200,7 @@ std::size_t MIPFrame::getMsgSize()
 	n = mask & (*header >> 19);
 	if (n > 0) {
 		//if this then it is normal frame
-		return static_cast<std::size_t>(n * 4 - 4);		//- 4 to remove header
+		return static_cast<std::size_t>(n * 4 - MIP_HEADER_SIZE);		//- 4 to remove header
 	}
 	else {
 		//if this then the frame is a ARP or response frame

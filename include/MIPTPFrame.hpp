@@ -18,15 +18,16 @@
 //Local
 #include "AddressTypes.hpp"
 /*
-packet layout :
+packet layout:
 	header is always 48 bits long.
-	<packet type : 2 bits> <padding bits : 2 bits> <dest port : 14 bits> <source port: 14 bits> <packet sequence number : 16 bits>
+	<packet type : 2 bits> <padding bits : 2 bits> <dest port : 14 bits> <source port: 14 bits> <packet sequence number : 16 bits> <data>
 	
 	packet type :
 		Can be :
-			01 : connect request
-			10 : connect reply
-			11 : data transmission
+			00 : connect request 
+			01 : connect reply
+			10 : data transmission
+			11 : sack
 */
 class MIPTPFrame
 {
@@ -34,13 +35,15 @@ public:
 	/*
 	const
 	*/
-	static const std::size_t FRAME_HEADER_SIZE	= 18;		//in byte
-	static const std::size_t FRAME_MAX_SIZE		= 1496;		//in byte
+	static const std::size_t FRAME_HEADER_SIZE	= 6;									//in byte
+	static const std::size_t FRAME_MAX_SIZE		= 1496;									//in byte
+	static const std::size_t FRAME_MAX_MSG_SIZE = FRAME_MAX_SIZE - FRAME_HEADER_SIZE;	//in byte
 	enum Packet_Type
 	{
-		request = 0b01,
-		reply	= 0b10,
-		data	= 0b11
+		request = 0b00,
+		reply	= 0b01,
+		data	= 0b10,
+		sack	= 0b11
 	};
 
 	/*
@@ -207,6 +210,15 @@ public:
 		void
 	*/
 	void swap(MIPTPFrame & other);
+
+	/*
+	Calculate padding.
+	Parameters:
+		size
+	Return
+		padding		int where the first 2 bits are relevant
+	*/
+	static int calcPadding(std::size_t size);
 
 	/*
 	To string (for testing).

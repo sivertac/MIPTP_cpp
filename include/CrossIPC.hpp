@@ -24,6 +24,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "LinuxException.hpp"
 
@@ -34,6 +35,9 @@
 
 
 class BrokenPipeException : public std::exception
+{
+};
+class WouldBlockException : public std::exception
 {
 };
 	
@@ -152,6 +156,30 @@ public:
 	*/
 	bool isClosed();
 
+	/*
+	Enable nonblocking.
+	Parameters:
+	Return:
+		void
+	*/
+	void enableNonBlock();
+
+	/*
+	Disable nonblocking.
+	Parameters:
+	Return:
+		void
+	*/
+	void disableNonBlock();
+
+	/*
+	Check if nonblocking
+	Parameters:
+	Return:
+		bool
+	*/
+	bool isNonBlock();
+
 	using AnonymousSocketPair = std::pair<AnonymousSocket, AnonymousSocket>;
 	/*
 	Create a AnonymousSocketPair.
@@ -169,6 +197,7 @@ private:
 	int m_fd;
 #endif
 	bool m_closed;
+	bool m_nonblock;
 };
 	
 class NamedSocket

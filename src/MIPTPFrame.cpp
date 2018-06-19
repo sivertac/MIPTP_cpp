@@ -6,6 +6,7 @@
 MIPTPFrame::MIPTPFrame() :
 	m_data(FRAME_HEADER_SIZE)
 {
+	setMsgSize(0);
 }
 
 MIPTPFrame::MIPTPFrame(char * buf, std::size_t size)
@@ -57,6 +58,7 @@ void MIPTPFrame::setSequenceNumber(int seq)
 void MIPTPFrame::setMsgSize(std::size_t size)
 {
 	m_data.resize(size + FRAME_HEADER_SIZE);
+	setPadding(calcPadding(size + FRAME_HEADER_SIZE + 4));
 }
 
 void MIPTPFrame::setMsg(const char * buf, std::size_t size)
@@ -134,6 +136,16 @@ char * MIPTPFrame::getData()
 void MIPTPFrame::swap(MIPTPFrame & other)
 {
 	m_data.swap(other.m_data);
+}
+
+int MIPTPFrame::calcPadding(std::size_t size)
+{
+	std::size_t d;
+	d = size % 4;
+	if (d != 0) {
+		d = 4 - d;
+	}
+	return static_cast<int>(d);
 }
 
 std::string MIPTPFrame::toString()
