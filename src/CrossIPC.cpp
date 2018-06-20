@@ -124,10 +124,15 @@ std::size_t AnonymousSocket::write(const char* buf, std::size_t len)
 {	
 	ssize_t ret = send(m_fd, buf, len, 0);
 	if (ret == 0) {
-		throw BrokenPipeException();
+		throw LinuxException::BrokenPipeException();
 	}
 	else if (ret == -1) {
-		throw LinuxException::Error("send()");
+		if (errno == EWOULDBLOCK || errno == EAGAIN) {
+			throw LinuxException::WouldBlockException();
+		}
+		else {
+			throw LinuxException::Error("send()");
+		}
 	}
 	return static_cast<std::size_t>(ret);
 }
@@ -136,11 +141,11 @@ std::size_t AnonymousSocket::read(char* buf, std::size_t buf_size)
 {
 	ssize_t ret = recv(m_fd, buf, buf_size, 0);	
 	if (ret == 0) {
-		throw BrokenPipeException();
+		throw LinuxException::BrokenPipeException();
 	}
 	else if (ret == -1) {
-		if (errno == EWOULDBLOCK) {
-			throw WouldBlockException();
+		if (errno == EWOULDBLOCK || errno == EAGAIN) {
+			throw LinuxException::WouldBlockException();
 		}
 		else {
 			throw LinuxException::Error("recv()");

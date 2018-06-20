@@ -19,6 +19,7 @@
 
 //Local
 #include "CrossIPC.hpp"
+#include "TimerWrapper.hpp"
 #include "AddressTypes.hpp"
 #include "Application.hpp"
 #include "MIPTPFrame.hpp"
@@ -35,10 +36,10 @@ namespace SlidingWindow
 			m_source_port(source_port),
 			m_dest_port(dest_port)
 		{
-			assert(in_sock.isNonBlock());
+			assert(m_in_sock.isNonBlock());
 		}
 
-		void receiveAck(MIPTPFrame & frame)
+		void receiveFrame(MIPTPFrame & frame)
 		{
 			assert(frame.getType() == MIPTPFrame::sack);
 			int seq_num = frame.getSequenceNumber();
@@ -52,21 +53,10 @@ namespace SlidingWindow
 
 		void queueFrames()
 		{
-			loadFrames();
 			for (int i = 0; i < m_used_slots; ++i) {
 				m_out_queue.push(*m_frame_container[i]);
 			}
 		}
-	private:
-		const int m_seq_size = N * 2;
-		const int m_window_size = N;
-		int m_used_slots = 0;
-		int m_seq_base = 0;
-		std::array<std::unique_ptr<MIPTPFrame>, N> m_frame_container;
-		std::queue<MIPTPFrame> & m_out_queue;
-		AnonymousSocket & m_in_sock;
-		const Port m_source_port;
-		const Port m_dest_port;
 
 		void loadFrames()
 		{
@@ -77,7 +67,7 @@ namespace SlidingWindow
 				try {
 					ret = m_in_sock.read(frame.getMsg(), MIPTPFrame::FRAME_MAX_MSG_SIZE);
 				}
-				catch (WouldBlockException & e) {
+				catch (LinuxException::WouldBlockException & e) {
 					break;
 				}
 				frame.setType(MIPTPFrame::data);
@@ -88,6 +78,17 @@ namespace SlidingWindow
 				++m_used_slots;
 			}
 		}
+
+	private:
+		const int m_seq_size = N * 2;
+		const int m_window_size = N;
+		int m_used_slots = 0;
+		int m_seq_base = 0;
+		std::array<std::unique_ptr<MIPTPFrame>, N> m_frame_container;
+		std::queue<MIPTPFrame> & m_out_queue;
+		AnonymousSocket & m_in_sock;
+		const Port m_source_port;
+		const Port m_dest_port;
 
 		void moveWindow(int moves)
 		{
@@ -194,10 +195,61 @@ public:
 	/*
 	Constructor.
 	Parameters:
-		port
+		client_port		port for this client
+		server_port		port to attempt handshake on
 		sock
+		out_queue
 	*/
-	ApplicationClient(Port port, AnonymousSocket & sock);
+	ApplicationClient(Port client_port, Port server_port, AnonymousSocket & sock, std::queue<MIPTPFrame> & out_queue);
+
+	/*
+	Receive frame from sender.
+	Parameters:
+		frame		ref to frame.
+	Return:
+		void
+	*/
+	void receiveFrame(MIPTPFrame & frame);
+
+	/*
+	Handle sock events.
+	Parameters:
+	Return:
+		void
+	*/
+	void handleSock();
+
+	/*
+	Get server port.
+	Parameters:
+	Return:
+	port
+	*/
+	Port getServerPort();
+
+	/*
+	Get client port.
+	Parameters:
+	Return:
+	port
+	*/
+	Port getClientPort();
+
+	/*
+	Get ref to sock.
+	Parameters:
+	Return:
+		ref to sock
+	*/
+	AnonymousSocket & getSock();
+
+	/*
+	Get ref to timer.
+	Parameters:
+	Return:
+		ref to timer
+	*/
+	TimerWrapper & getTimer();
 
 private:
 	bool m_connected = false;
@@ -206,7 +258,9 @@ private:
 	std::unique_ptr<SlidingWindow::SendWindow<WINDOW_SIZE>> m_send_window;
 	std::unique_ptr<SlidingWindow::ReceiveWindow<WINDOW_SIZE>> m_receive_window;
 	AnonymousSocket m_sock;
+	TimerWrapper m_timer;
 	std::queue<MIPTPFrame> & m_out_queue;
+	std::vector<char> m_msg_buffer;
 };
 
 class ApplicationServer
@@ -215,25 +269,64 @@ public:
 	/*
 	Constructor.
 	*/
-	ApplicationServer(Port port, AnonymousSocket & sock);
-
-	
+	ApplicationServer(Port port, AnonymousSocket & sock, std::queue<MIPTPFrame> & out_queue);
 
 	/*
-	Get Port.
+	Receive frame from sender.
+	Parameters:
+		frame		ref to frame.
+	Return:
+		void
+	*/
+	void receiveFrame(MIPTPFrame & frame);
+
+	/*
+	Handle sock events.
+	Parameters:
+	Return:
+		void
+	*/
+	void handleSock();
+
+	/*
+	Handle timer events.
+	Parameters:
+	Return:
+		void
+	*/
+	void handleTimer();
+
+	/*
+	Get server port.
 	Parameters:
 	Return:
 		port
 	*/
-	Port getPort();
+	Port getServerPort();
 
 	/*
-	Get sock fd.
+	Get client port.
 	Parameters:
 	Return:
-		fd
+		port
 	*/
-	int getFd();
+	Port getClientPort();
+
+	/*
+	Get ref to sock.
+	Parameters:
+	Return:
+		ref to sock
+	*/
+	AnonymousSocket & getSock();
+
+	/*
+	Get ref to timer.
+	Parameters:
+	Return:
+		ref to timer
+	*/
+	TimerWrapper & getTimer();
 private:
 	bool m_connected = false;
 	Port m_server_port;
@@ -241,7 +334,9 @@ private:
 	std::unique_ptr<SlidingWindow::SendWindow<WINDOW_SIZE>> m_send_window;
 	std::unique_ptr<SlidingWindow::ReceiveWindow<WINDOW_SIZE>> m_receive_window;
 	AnonymousSocket m_sock;
+	TimerWrapper m_timer;
 	std::queue<MIPTPFrame> & m_out_queue;
+	std::vector<char> m_msg_buffer;
 };
 
 #endif // !Application_HEADER

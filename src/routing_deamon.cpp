@@ -213,7 +213,7 @@ void receiveUpdateSock()
 			break;
 		}
 	}
-	catch (BrokenPipeException & e) {
+	catch (LinuxException::BrokenPipeException & e) {
 		shutdownThreads();
 	}
 	std::cout << distance_vector_table.toString() << "\n";
@@ -236,7 +236,7 @@ void receiveLookupSock()
 	try {
 		lookup_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
 	}
-	catch (BrokenPipeException & e) {
+	catch (LinuxException::BrokenPipeException & e) {
 		shutdownThreads();
 		return;
 	}
@@ -349,15 +349,22 @@ int main(int argc, char** argv)
 	epoll.addFriend<AnonymousSocket>(update_sock);
 	epoll.addFriend<AnonymousSocket>(lookup_sock);
 
-	while (epoll.wait(20) == EventPoll::Okay) {
-		for (auto & ev : epoll.m_event_vector) {
-			int in_fd = ev.data.fd;
-			if (in_fd == update_sock.getFd()) {
-				receiveUpdateSock();
+	while (!epoll.isClosed()) {
+		try {
+			auto & event_vec = epoll.wait(20);
+			for (auto & ev : event_vec) {
+				int in_fd = ev.data.fd;
+				if (in_fd == update_sock.getFd()) {
+					receiveUpdateSock();
+				}
+				else if (in_fd == lookup_sock.getFd()) {
+					receiveLookupSock();
+				}
 			}
-			else if (in_fd == lookup_sock.getFd()) {
-				receiveLookupSock();
-			}
+		}
+		catch (LinuxException::InterruptedException & e) {
+			//if this then interrupted
+			std::cout << "routing_deamon: epoll interrupted\n";
 		}
 	}
 

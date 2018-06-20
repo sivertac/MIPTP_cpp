@@ -23,12 +23,6 @@
 class EventPoll
 {
 public:
-	enum WaitState {
-		Error,
-		Timeout,
-		Okay
-	};
-
 	/*
 	Construtor.
 	Not a valid epoll.
@@ -49,10 +43,10 @@ public:
 		max_event	max number of events to pull
 		timeout		epoll timeout parameter
 	Return:
-		WaitState enum
+		ref to vector containing events
 	*/
-	WaitState wait(std::size_t max_event, int timeout);
-	WaitState wait(std::size_t max_event);
+	std::vector<struct epoll_event> & wait(std::size_t max_event, int timeout);
+	std::vector<struct epoll_event> & wait(std::size_t max_event);
 
 	/*
 	Close epoll (makes m_fd invalid).
@@ -70,6 +64,26 @@ public:
 		void
 	*/
 	void add(int fd);
+
+	/*
+	Add file descriptor with custom flags.
+	Parameters:
+		fd		file descriptor to add
+		flags	custom flags
+	Return:
+		void
+	*/
+	void add(int fd, int flags);
+
+	/*
+	Add file descriptor with custom epoll_event.
+	Parameters:
+		fd		file descriptor to add
+		ev		ref to epoll_event
+	Return:
+		void
+	*/
+	void add(int fd, struct epoll_event & ev);
 
 	/*
 	Add friend to EventPoll.
@@ -115,11 +129,11 @@ public:
 		this->remove(obj.getFd());
 	}
 
+private:
 	/*
 	For holding events from epoll_wait() (capacity must be >= max_event).
 	*/
 	std::vector<struct epoll_event> m_event_vector;
-private:
 	int m_fd;
 	bool m_closed;
 };

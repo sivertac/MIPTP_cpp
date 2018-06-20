@@ -32,14 +32,6 @@
 //error
 	#error CrossIPC.hpp: Not defined target OS
 #endif
-
-
-class BrokenPipeException : public std::exception
-{
-};
-class WouldBlockException : public std::exception
-{
-};
 	
 class AnonymousSocket
 {
@@ -76,7 +68,20 @@ public:
 		size_t		number of bytes written
 	*/
 	std::size_t write(const char* buf, std::size_t len);
-		
+	
+	/*
+	Generic write (write sizeof(T)).
+	Parameters:
+		data		ref to data
+	Return:
+		size_t		number of bytes read
+	*/
+	template <typename T>
+	std::size_t writeGeneric(T & data)
+	{
+		return write(reinterpret_cast<char*>(&data), sizeof(T));
+	}
+
 	/*
 	Write string to socket.
 	Parameters:
@@ -95,6 +100,19 @@ public:
 		size_t		number of bytes read
 	*/
 	std::size_t read(char* buf, std::size_t buf_size);
+
+	/*
+	Generic read (read sizeof(T)).
+	Parameters:
+		data		ref to data
+	Return:
+		size_t		number of bytes read
+	*/
+	template <typename T>
+	std::size_t readGeneric(T & data)
+	{
+		return read(reinterpret_cast<char*>(&data), sizeof(T));
+	}
 		
 	/*
 	Read string from socket.

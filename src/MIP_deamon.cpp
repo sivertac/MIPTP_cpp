@@ -502,43 +502,50 @@ int main(int argc, char** argv)
 	timeout_timer.setExpirationFromNow(ARP_TIMEOUT);
 	epoll.addFriend(timeout_timer);
 
-	while (epoll.wait(20) == EventPoll::Okay) {
-		for (auto & ev : epoll.m_event_vector) {
-			int in_fd = ev.data.fd;
-			//check
-			if (in_fd == timeout_timer.getFd()) {
-				//std::cout << "Expired: " << timeout_timer.readExpiredTime() << "\n";
-				for (auto it = arp_pair_vec.begin(); it != arp_pair_vec.end(); ) {
-					if (!it->reply) {
-						sendArpLostConnection(it->mip);
-						arp_pair_vec.erase(it);
+	while (!epoll.isClosed()) {
+		try {
+			auto & event_vec = epoll.wait(20);		//<- epoll exceptions will happen here
+			for (auto & ev : event_vec) {
+				int in_fd = ev.data.fd;
+				//check
+				if (in_fd == timeout_timer.getFd()) {
+					//std::cout << "Expired: " << timeout_timer.readExpiredTime() << "\n";
+					for (auto it = arp_pair_vec.begin(); it != arp_pair_vec.end(); ) {
+						if (!it->reply) {
+							sendArpLostConnection(it->mip);
+							arp_pair_vec.erase(it);
+						}
+						else {
+							it->reply = false;
+							++it;
+						}
 					}
-					else {
-						it->reply = false;
-						++it;
+					for (RawSock::MIPRawSock & sock : raw_sock_vec) {
+						sendBroadcastFrame(sock);
+					}
+					timeout_timer.setExpirationFromNow(ARP_TIMEOUT);
+				}
+				else if (in_fd == transport_sock.getFd()) {
+					receiveTransportSock();
+				}
+				else if (in_fd == update_sock.getFd()) {
+					receiveUpdateSock();
+				}
+				else if (in_fd == lookup_sock.getFd()) {
+					receiveLookupSock();
+				}
+				else {
+					//check raw
+					auto raw_it = std::find_if(raw_sock_vec.begin(), raw_sock_vec.end(), [&](RawSock::MIPRawSock & s){ return s.getFd() == in_fd; });
+					if (raw_it != raw_sock_vec.end()) {
+						receiveRawSock((*raw_it));
 					}
 				}
-				for (RawSock::MIPRawSock & sock : raw_sock_vec) {
-					sendBroadcastFrame(sock);
-				}
-				timeout_timer.setExpirationFromNow(ARP_TIMEOUT);
 			}
-			else if (in_fd == transport_sock.getFd()) {
-				receiveTransportSock();
-			}
-			else if (in_fd == update_sock.getFd()) {
-				receiveUpdateSock();
-			}
-			else if (in_fd == lookup_sock.getFd()) {
-				receiveLookupSock();
-			}
-			else {
-				//check raw
-				auto raw_it = std::find_if(raw_sock_vec.begin(), raw_sock_vec.end(), [&](RawSock::MIPRawSock & s){ return s.getFd() == in_fd; });
-				if (raw_it != raw_sock_vec.end()) {
-					receiveRawSock((*raw_it));
-				}
-			}
+		}
+		catch (LinuxException::InterruptedException & e) {
+			//if this then interrupted
+			std::cout << "MIP_deamon: epoll interrupted\n";
 		}
 	}
 

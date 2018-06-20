@@ -20,12 +20,25 @@ namespace LinuxException
 	class Error : public std::runtime_error
 	{
 	public:
-		/*
-		Constructor.
-		*/
 		Error(std::string what);
 	private:
 		static std::string concat(std::string str, char* err_msg);
+	};
+
+	class BrokenPipeException : public std::exception
+	{
+	};
+
+	class WouldBlockException : public std::exception
+	{
+	};
+
+	class TimeoutException : public std::exception
+	{
+	};
+
+	class InterruptedException : public std::exception
+	{
 	};
 }
 
