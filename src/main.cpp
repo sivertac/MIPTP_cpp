@@ -6,21 +6,76 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <functional>
+#include <thread>
 
 //Local
 #include "../include/MIPFrame.hpp"
 #include "../include/MIPTPFrame.hpp"
 #include "../include/Application.hpp"
+#include "../include/AddressTypes.hpp"
+#include "../include/CrossIPC.hpp"
+
+AnonymousSocketPacket sock1;
+AnonymousSocketPacket sock2;
+
+void child_handler()
+{
+	std::size_t size;
+	std::vector<char> vec(100);
+	AnonymousSocketPacket::IovecWrapper<2> iov;
+	iov.setIndex(0, size);
+	iov.setIndex(1, vec.data(), 100);
+
+	sock2.recviovec(iov);
+
+	std::cout << size << "\n";
+	std::cout << std::string(vec.begin(), vec.begin() + size) << "\n";
+
+	std::cout << "child thread exit\n";
+}
 
 int main(int argc, char** argv)
 {
-	std::queue<MIPTPFrame> queue;
+	auto pair = AnonymousSocketPacket::createPair();
+	sock1 = pair.first;
+	sock2 = pair.second;
+
+	std::thread child_thread(child_handler);
+	
+	std::string str = "this is a string";
+
+	std::size_t size;
+	std::vector<char> vec;
+
+	vec.insert(vec.end(), str.begin(), str.end());
+	size = vec.size();
+
+	AnonymousSocketPacket::IovecWrapper<2> iov;
+	iov.setIndex(0, size);
+	iov.setIndex(1, vec.data(), size);
+
+	sleep(1);
+
+	sock1.sendiovec(iov);
+
+	child_thread.join();
+
+	std::cout << "main thread exit\n";
+
+	return 0;
+}
+
+/*
+int main(int argc, char** argv)
+{
+	std::queue<std::pair<MIPAddress, MIPTPFrame>> queue;
 	std::vector<char> buffer;
 	auto pair = AnonymousSocket::createAnonymousSocketPair();
 	pair.second.enableNonBlock();
 
-	SlidingWindow::SendWindow<10> send(queue, pair.second, 1, 2);
-	SlidingWindow::ReceiveWindow<10> receive(queue, buffer, 2, 1);
+	SlidingWindow::SendWindow<10> send(queue, pair.second, 10, 1, 2);
+	SlidingWindow::ReceiveWindow<10> receive(queue, buffer, 20, 2, 1);
 
 	send.queueFrames();
 
@@ -31,8 +86,7 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
-
+*/
 
 /*
 int main(int argc, char** argv)

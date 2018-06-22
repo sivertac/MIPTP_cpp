@@ -48,7 +48,7 @@ std::vector<RawSock::MIPRawSock> raw_sock_vec;		//(must keep order intact so not
 std::vector<ARPPair> arp_pair_vec;					//(can't have duplicates)
 ChildProcess routing_deamon;
 EventPoll epoll;
-AnonymousSocket transport_sock;
+AnonymousSocketPacket transport_sock;
 AnonymousSocket update_sock;
 AnonymousSocket lookup_sock;
 std::queue<std::pair<bool, MIPFrame>> lookup_queue;	//pair <true if source mip is set, frame>
@@ -201,14 +201,24 @@ Global:
 void receiveTransportSock()
 {
 	static MIPFrame frame;
+	if (frame.getMsgSize() != MIPFrame::MSG_MAX_SIZE) {
+		frame.setMsgSize(MIPFrame::MSG_MAX_SIZE);
+	}
+	
 	MIPAddress dest;
 	std::size_t msg_size;
-	transport_sock.read(reinterpret_cast<char*>(&dest), sizeof(dest));
-	transport_sock.read(reinterpret_cast<char*>(&msg_size), sizeof(msg_size));
+
+	AnonymousSocketPacket::IovecWrapper<3> iov;
+	iov.setIndex(0, dest);
+	iov.setIndex(1, msg_size);
+	iov.setIndex(2, frame.getMsg(), frame.getMsgSize());
+
+	transport_sock.recviovec(iov);
+
 	if (frame.getMsgSize() != msg_size) {
 		frame.setMsgSize(msg_size);
 	}
-	transport_sock.read(frame.getMsg(), msg_size);
+
 	frame.setMipTRA(MIPFrame::T);
 	frame.setMipDest(dest);
 	frame.setMipTTL(0xff);
@@ -378,9 +388,14 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 		}
 		else {
 			//send to transport deamon
-			transport_sock.write(reinterpret_cast<char*>(&source_mip), sizeof(source_mip));
-			transport_sock.write(reinterpret_cast<char*>(&msg_size), sizeof(msg_size));
-			transport_sock.write(mip_frame.getMsg(), msg_size);
+			AnonymousSocketPacket::IovecWrapper<3> iov;
+			iov.setIndex(0, source_mip);
+			iov.setIndex(1, msg_size);
+			iov.setIndex(2, mip_frame.getMsg(), msg_size);
+			transport_sock.sendiovec(iov);
+			//transport_sock.write(reinterpret_cast<char*>(&source_mip), sizeof(source_mip));
+			//transport_sock.write(reinterpret_cast<char*>(&msg_size), sizeof(msg_size));
+			//transport_sock.write(mip_frame.getMsg(), msg_size);
 		}
 		break;
 	default:
@@ -450,12 +465,12 @@ int main(int argc, char** argv)
 	}
 
 	//Connect transport_deamon
-	transport_sock = AnonymousSocket(argv[1]);
+	transport_sock = AnonymousSocketPacket(argv[1]);
 
 	//Connect routing_deamon
 	{
-		auto pair1 = AnonymousSocket::createAnonymousSocketPair();
-		auto pair2 = AnonymousSocket::createAnonymousSocketPair();
+		auto pair1 = AnonymousSocket::createPair();
+		auto pair2 = AnonymousSocket::createPair();
 		
 		std::vector<std::string> args(2);
 		args[0] = pair1.second.toString();
@@ -482,7 +497,7 @@ int main(int argc, char** argv)
 	for (auto & sock : raw_sock_vec) {
 		epoll.addFriend<RawSock::MIPRawSock>(sock);
 	}
-	epoll.addFriend<AnonymousSocket>(transport_sock);
+	epoll.addFriend<AnonymousSocketPacket>(transport_sock);
 	epoll.addFriend<AnonymousSocket>(update_sock);
 	epoll.addFriend<AnonymousSocket>(lookup_sock);
 

@@ -28,6 +28,7 @@ public:
 	static const std::size_t ETH_HEADER_SIZE = 14;		//in byte
 	static const std::size_t MIP_HEADER_SIZE = 4;		//in byte
 	static const std::size_t FRAME_MAX_SIZE = 1514;		//in byte
+	static const std::size_t MSG_MAX_SIZE = FRAME_MAX_SIZE - FRAME_HEADER_SIZE;		//in byte
 	enum TRA 
 	{
 		ZERO =	0b000,

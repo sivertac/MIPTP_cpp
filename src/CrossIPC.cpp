@@ -109,7 +109,8 @@ AnonymousSocket::AnonymousSocket(const int fd) :
 }
 	
 AnonymousSocket::AnonymousSocket(const std::string & sock_string) :
-	m_fd(std::atoi(sock_string.c_str()))
+	m_fd(std::atoi(sock_string.c_str())),
+	m_closed(false)
 {
 }
 	
@@ -207,7 +208,7 @@ bool AnonymousSocket::isNonBlock()
 	return m_nonblock;
 }
 
-AnonymousSocket::AnonymousSocketPair AnonymousSocket::createAnonymousSocketPair()
+AnonymousSocket::AnonymousSocketPair AnonymousSocket::createPair()
 {
 	int fd_pair[2];
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fd_pair) == -1) {
@@ -319,5 +320,88 @@ void NamedSocket::nameCopy(sockaddr_un & target, std::string & source)
 	}
 }
 
+AnonymousSocketPacket::AnonymousSocketPacket() :
+	m_closed(true)
+{
+}
 
+AnonymousSocketPacket::AnonymousSocketPacket(const int fd) :
+	m_fd(fd),
+	m_closed(false)
+{
+}
 
+AnonymousSocketPacket::AnonymousSocketPacket(const std::string & sock_string) :
+	m_fd(std::atoi(sock_string.c_str())),
+	m_closed(false)
+{
+}
+
+std::string AnonymousSocketPacket::toString()
+{
+	std::stringstream ss;
+	ss << m_fd;
+	return ss.str();
+}
+
+void AnonymousSocketPacket::closeResources()
+{
+	m_closed = true;
+	close(m_fd);
+}
+
+int AnonymousSocketPacket::getFd()
+{
+	return m_fd;
+}
+
+bool AnonymousSocketPacket::isClosed()
+{
+	return m_closed;
+}
+
+void AnonymousSocketPacket::enableNonBlock()
+{
+	int flags;
+	int s;
+	flags = fcntl(m_fd, F_GETFL, 0);
+	if (flags == -1) {
+		throw LinuxException::Error("fcntl()");
+	}
+	flags |= O_NONBLOCK;
+	s = fcntl(m_fd, F_SETFL, flags);
+	if (s == -1) {
+		throw LinuxException::Error("fcntl()");
+	}
+	m_nonblock = true;
+}
+
+void AnonymousSocketPacket::disableNonBlock()
+{
+	int flags;
+	int s;
+	flags = fcntl(m_fd, F_GETFL, 0);
+	if (flags == -1) {
+		throw LinuxException::Error("fcntl()");
+	}
+	flags &= (~O_NONBLOCK);
+	s = fcntl(m_fd, F_SETFL, flags);
+	if (s == -1) {
+		throw LinuxException::Error("fcntl()");
+	}
+	m_nonblock = false;
+}
+
+bool AnonymousSocketPacket::isNonBlock()
+{
+	return m_nonblock;
+}
+
+AnonymousSocketPacket::AnonymousSocketPacketPair AnonymousSocketPacket::createPair()
+{
+	int fd_pair[2];
+	if (socketpair(AF_UNIX, SOCK_SEQPACKET, 0, fd_pair) == -1) {
+		throw LinuxException::Error("socketpair()");
+	}
+	return AnonymousSocketPacketPair(AnonymousSocketPacket(fd_pair[0]), AnonymousSocketPacket(fd_pair[1]));
+}

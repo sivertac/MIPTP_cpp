@@ -32,7 +32,10 @@
 //error
 	#error CrossIPC.hpp: Not defined target OS
 #endif
-	
+
+/*
+Unix socket wrapper with stream interface.
+*/
 class AnonymousSocket
 {
 public:
@@ -205,7 +208,7 @@ public:
 	Return:
 		pair
 	*/
-	static AnonymousSocketPair createAnonymousSocketPair();
+	static AnonymousSocketPair createPair();
 
 private:
 #ifdef WINDOWS
@@ -217,7 +220,7 @@ private:
 	bool m_closed;
 	bool m_nonblock;
 };
-	
+
 class NamedSocket
 {
 public:
@@ -288,6 +291,209 @@ private:
 		void
 	*/
 	static void nameCopy(struct sockaddr_un & target, std::string & source);
+};
+
+/*
+Unix socket wrapper with SEQ_PACKET interface.
+*/
+class AnonymousSocketPacket
+{
+public:
+	/*
+	struct iovec wrapper.
+	*/
+	template <std::size_t N>
+	class IovecWrapper
+	{
+	public:
+		/*
+		Set index in iovec with pointer and custom size.
+		Parameters:
+			index
+			ptr
+			size
+		Return:
+			void
+		*/
+		void setIndex(std::size_t index, void* ptr, std::size_t size)
+		{
+			assert(index < N);
+			m_iov[index].iov_base = ptr;
+			m_iov[index].iov_len = size;
+		}
+
+		/*
+		Set index in iovec with pointer to of ref and size of T.
+		Parameters:
+			index	index to set
+			data	ref to data to point to
+		Return:
+			void
+		*/
+		template <typename T>
+		void setIndex(std::size_t index, T & data)
+		{
+			setIndex(index, reinterpret_cast<void*>(&data), sizeof(T));
+		}
+
+		/*
+		Get size.
+		Parameters:
+		Return
+			size
+		*/
+		std::size_t getSize() {
+			return N;
+		}
+
+		struct iovec m_iov[N];
+	};
+
+	/*
+	Constructor.
+	*/
+	AnonymousSocketPacket();
+
+	/*
+	Constructor:
+	Parameters:
+		fd
+	*/
+	AnonymousSocketPacket(const int fd);
+
+	/*
+	Constructor:
+	Parameters:
+		sock_string
+	*/
+	AnonymousSocketPacket(const std::string & sock_string);
+
+	/*
+	Send iovec.
+	Parameters:
+		iov			ref to iovec
+		iov_size	iovec size
+	Return:
+		void
+	*/
+	template <std::size_t N>
+	void sendiovec(IovecWrapper<N> & iov)
+	{
+		struct msghdr message;
+		std::memset(&message, 0, sizeof(message));
+		message.msg_iov = iov.m_iov;
+		message.msg_iovlen = iov.getSize();
+		ssize_t ret = sendmsg(m_fd, &message, 0);
+		if (ret == 0) {
+			throw LinuxException::BrokenPipeException();
+		}
+		else if (ret == -1) {
+			if (errno == EWOULDBLOCK || errno == EAGAIN) {
+				throw LinuxException::WouldBlockException();
+			}
+			else {
+				throw LinuxException::Error("sendmsg()");
+			}
+		}
+	}
+
+	/*
+	Receive iovec.
+	Parameters:
+		iov			ref to iovec
+		iov_size	iovec_size
+	Return:
+		void
+	*/
+	template <std::size_t N>
+	void recviovec(IovecWrapper<N> & iov)
+	{
+		struct msghdr message;
+		std::memset(&message, 0, sizeof(message));
+		message.msg_iov = iov.m_iov;
+		message.msg_iovlen = iov.getSize();
+		ssize_t ret = recvmsg(m_fd, &message, 0);
+		if (ret == 0) {
+			throw LinuxException::BrokenPipeException();
+		}
+		else if (ret == -1) {
+			if (errno == EWOULDBLOCK || errno == EAGAIN) {
+				throw LinuxException::WouldBlockException();
+			}
+			else {
+				throw LinuxException::Error("sendmsg()");
+			}
+		}
+	}
+
+	/*
+	Create a string that holds IPC descriptors (that can be used in constructor).
+	Parameters:
+	Return:
+		std::string
+	*/
+	std::string toString();
+
+	/*
+	Close socket (will close underlying comms)
+	Parameters:
+	Return:
+		void
+	*/
+	void closeResources();
+
+	/*
+	Get fd.
+	Parameters:
+	Return:
+		fd
+	*/
+	int getFd();
+
+	/*
+	Check if sock is closed.
+	Parameters:
+	Return:
+		if true close, else valid
+	*/
+	bool isClosed();
+
+	/*
+	Enable nonblocking.
+	Parameters:
+	Return:
+		void
+	*/
+	void enableNonBlock();
+
+	/*
+	Disable nonblocking.
+	Parameters:
+	Return:
+		void
+	*/
+	void disableNonBlock();
+
+	/*
+	Check if nonblocking
+	Parameters:
+	Return:
+		bool
+	*/
+	bool isNonBlock();
+
+	using AnonymousSocketPacketPair = std::pair<AnonymousSocketPacket, AnonymousSocketPacket>;
+	/*
+	Create a AnonymousSocketPacketPair.
+	Parameters:
+	Return:
+		pair
+	*/
+	static AnonymousSocketPacketPair createPair();
+private:
+	int m_fd;
+	bool m_closed;
+	bool m_nonblock;
 };
 
 #endif
