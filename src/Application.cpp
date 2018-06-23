@@ -91,14 +91,15 @@ ApplicationServer::ApplicationServer(AnonymousSocket & sock, TimerWrapper & time
 	m_timer(timer),
 	m_out_queue(out_queue),
 	m_is_port_free(is_port_free),
-	m_get_free_port(get_free_port)
+	m_get_free_port(get_free_port),
+	m_stage(stage_listen)
 {
 	assert(m_sock.isNonBlock());
 }
 
 void ApplicationServer::receiveFrame(MIPTPFrame & frame, MIPAddress source)
 {
-	if (!m_connected) {
+	if (m_stage == stage_listen) {
 		//if this then handle handshake request
 		if (frame.getType() == MIPTPFrame::request) {
 			m_client_port = frame.getSource();
@@ -113,10 +114,10 @@ void ApplicationServer::receiveFrame(MIPTPFrame & frame, MIPAddress source)
 				new SlidingWindow::SendWindow<WINDOW_SIZE>(m_out_queue, m_sock, m_dest_mip, m_server_port, m_client_port));
 			m_receive_window = std::unique_ptr<SlidingWindow::ReceiveWindow<WINDOW_SIZE>>(
 				new SlidingWindow::ReceiveWindow<WINDOW_SIZE>(m_out_queue, m_msg_buffer, m_dest_mip, m_server_port, m_client_port));
-			m_connected = true;
+			m_stage = stage_connected;
 		}
 	}
-	else {
+	else if (m_stage == stage_connected) {
 		//else handle data or sack frame
 		int type = frame.getType();
 		switch (type)
@@ -132,30 +133,53 @@ void ApplicationServer::receiveFrame(MIPTPFrame & frame, MIPAddress source)
 			break;
 		}
 	}
+	else {
+		assert(false);
+	}
 }
 
 void ApplicationServer::handleSock()
 {
-	if (m_connected) {
-		//read block
-		m_send_window->loadFrames();
-		//send until block
-		if (!m_msg_buffer.empty()) {
-			std::size_t ret;
-			try {
-				ret = m_sock.write(m_msg_buffer.data(), m_msg_buffer.size());
-			}
-			catch (LinuxException::WouldBlockException & e) {
-				return;
-			}
-			if (ret < m_msg_buffer.size()) {
-				m_msg_buffer.erase(m_msg_buffer.begin(), m_msg_buffer.begin() + ret);
-			}
-			else {
-				m_msg_buffer.clear();
-			}
+	if (m_stage == stage_application) {
+		Port port;
+		m_sock.readGeneric(port);
+		if (m_is_port_free(port)) {
+			//if this then continue
+			std::uint8_t reply = TransportInterface::reply_success;
+			m_sock.writeGeneric(reply);
+			m_stage = stage_listen;
+		}
+		else {
+			//if this decline request and set stage to failure
+			std::uint8_t reply = TransportInterface::reply_usedport;
+			m_sock.writeGeneric(reply);
+			m_sock.closeResources();
+			m_stage = stage_failure;
 		}
 	}
+	else if (m_stage == stage_connected) {
+
+	}
+	/*
+	//read block
+	m_send_window->loadFrames();
+	//send until block
+	if (!m_msg_buffer.empty()) {
+	std::size_t ret;
+	try {
+	ret = m_sock.write(m_msg_buffer.data(), m_msg_buffer.size());
+	}
+	catch (LinuxException::WouldBlockException & e) {
+	return;
+	}
+	if (ret < m_msg_buffer.size()) {
+	m_msg_buffer.erase(m_msg_buffer.begin(), m_msg_buffer.begin() + ret);
+	}
+	else {
+	m_msg_buffer.clear();
+	}
+	}
+	*/
 }
 
 void ApplicationServer::handleTimer()

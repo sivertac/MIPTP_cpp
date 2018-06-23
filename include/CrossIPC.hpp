@@ -384,10 +384,10 @@ public:
 		message.msg_iov = iov.m_iov;
 		message.msg_iovlen = iov.getSize();
 		ssize_t ret = sendmsg(m_fd, &message, 0);
-		if (ret == 0) {
-			throw LinuxException::BrokenPipeException();
-		}
-		else if (ret == -1) {
+		//if (ret == 0) {
+		//	throw LinuxException::BrokenPipeException();
+		//}
+		if (ret == -1) {
 			if (errno == EWOULDBLOCK || errno == EAGAIN) {
 				throw LinuxException::WouldBlockException();
 			}
@@ -413,10 +413,10 @@ public:
 		message.msg_iov = iov.m_iov;
 		message.msg_iovlen = iov.getSize();
 		ssize_t ret = recvmsg(m_fd, &message, 0);
-		if (ret == 0) {
-			throw LinuxException::BrokenPipeException();
-		}
-		else if (ret == -1) {
+		//if (ret == 0) {
+		//	throw LinuxException::BrokenPipeException();
+		//}
+		if (ret == -1) {
 			if (errno == EWOULDBLOCK || errno == EAGAIN) {
 				throw LinuxException::WouldBlockException();
 			}

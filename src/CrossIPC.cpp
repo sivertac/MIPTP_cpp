@@ -107,7 +107,7 @@ AnonymousSocket::AnonymousSocket(const int fd) :
 	m_closed(false)
 {
 }
-	
+
 AnonymousSocket::AnonymousSocket(const std::string & sock_string) :
 	m_fd(std::atoi(sock_string.c_str())),
 	m_closed(false)
@@ -124,10 +124,10 @@ std::string AnonymousSocket::toString()
 std::size_t AnonymousSocket::write(const char* buf, std::size_t len)
 {	
 	ssize_t ret = send(m_fd, buf, len, 0);
-	if (ret == 0) {
-		throw LinuxException::BrokenPipeException();
-	}
-	else if (ret == -1) {
+	//if (ret == 0) {
+	//	throw LinuxException::BrokenPipeException();
+	//}
+	if (ret == -1) {
 		if (errno == EWOULDBLOCK || errno == EAGAIN) {
 			throw LinuxException::WouldBlockException();
 		}
@@ -141,10 +141,10 @@ std::size_t AnonymousSocket::write(const char* buf, std::size_t len)
 std::size_t AnonymousSocket::read(char* buf, std::size_t buf_size)
 {
 	ssize_t ret = recv(m_fd, buf, buf_size, 0);	
-	if (ret == 0) {
-		throw LinuxException::BrokenPipeException();
-	}
-	else if (ret == -1) {
+	//if (ret == 0) {
+	//	throw LinuxException::BrokenPipeException();
+	//}
+	if (ret == -1) {
 		if (errno == EWOULDBLOCK || errno == EAGAIN) {
 			throw LinuxException::WouldBlockException();
 		}

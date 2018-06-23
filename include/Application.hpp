@@ -25,6 +25,7 @@
 #include "AddressTypes.hpp"
 #include "Application.hpp"
 #include "MIPTPFrame.hpp"
+#include "TransportInterface.hpp"
 
 namespace SlidingWindow
 {
@@ -71,7 +72,7 @@ namespace SlidingWindow
 					ret = m_in_sock.read(frame.getMsg(), MIPTPFrame::FRAME_MAX_MSG_SIZE);
 				}
 				catch (LinuxException::WouldBlockException & e) {
-					break;
+					return;
 				}
 				frame.setType(MIPTPFrame::data);
 				frame.setDest(m_dest_port);
@@ -198,6 +199,13 @@ const std::size_t WINDOW_SIZE = 10;
 class ApplicationClient
 {
 public:
+	enum ConnectStage {
+		stage_request,
+		stage_wait_reply,
+		stage_connected,
+		stage_failure
+	};
+
 	/*
 	Constructor.
 	Parameters:
@@ -265,6 +273,13 @@ public:
 	*/
 	TimerWrapper & getTimer();
 
+	/*
+	Get stage.
+	Parameters:
+	Return:
+		stage
+	*/
+	ConnectStage getStage();
 private:
 	bool m_connected = false;
 	MIPAddress m_dest_mip = 0;
@@ -283,8 +298,21 @@ private:
 class ApplicationServer
 {
 public:
+	enum ConnectStage {
+		stage_application,
+		stage_listen,
+		stage_connected,
+		stage_failure
+	};
+
 	/*
 	Constructor.
+	Parameters:
+		sock
+		timer
+		out_queue
+		is_port_free
+		get_free_port
 	*/
 	ApplicationServer(
 		AnonymousSocket & sock, 
@@ -351,8 +379,16 @@ public:
 		ref to timer
 	*/
 	TimerWrapper & getTimer();
+
+	/*
+	Get stage.
+	Parameters:
+	Return:
+		stage
+	*/
+	ConnectStage getStage();
 private:
-	bool m_connected = false;
+	ConnectStage m_stage;
 	MIPAddress m_dest_mip = 0;
 	Port m_server_port = 0;
 	Port m_client_port = 0;

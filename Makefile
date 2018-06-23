@@ -9,7 +9,7 @@ BINARIES = main MIP_deamon routing_deamon transport_deamon
 OBJECTS =	MIPFrame.o CrossForkExec.o CrossIPC.o \
 			RawSock.o AddressTypes.o LinuxException.o \
 			EventPoll.o DistanceVectorTable.o TimerWrapper.o \
-			Application.o MIPTPFrame.o
+			Application.o MIPTPFrame.o TransportInterface.o
 
 FILES =	$(BINARIES) $(OBJECTS)
 
@@ -61,6 +61,9 @@ Application.o: src/Application.cpp include/Application.hpp
 
 MIPTPFrame.o: src/MIPTPFrame.cpp include/MIPTPFrame.hpp
 	$(CC) $(FLAGS) -c src/MIPTPFrame.cpp
+
+TransportInterface.o: src/TransportInterface.cpp include/TransportInterface.hpp
+	$(CC) $(FLAGS) -c src/TransportInterface.cpp
 
 clean:
 	rm $(FILES)

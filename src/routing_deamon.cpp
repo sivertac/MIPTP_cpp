@@ -163,58 +163,52 @@ void receiveUpdateSock()
 	std::size_t recv_buf_size;
 	static std::vector<char> recv_buf;
 	static DistanceVectorTable advert_table;
-
 	std::vector<MIPAddress>::iterator neighbour_it;
 	std::vector<DistanceVectorTable::Column>::iterator distance_it;
-	try {
-		update_sock.read(reinterpret_cast<char*>(&option), sizeof(option));
-		switch (option)
-		{
-		case update_sock_option::LOCAL_MIP:
-			update_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
-			distance_vector_table.addLocalMip(mip);
-			break;
-		case update_sock_option::ARP_DISCOVERY:
-			update_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
-			neighbour_it = std::find(neighbour_mip_vec.begin(), neighbour_mip_vec.end(), mip);
-			if (neighbour_it == neighbour_mip_vec.end()) {
-				neighbour_mip_vec.push_back(mip);
-				distance_vector_table.addArpDiscovery(mip);
-				addUpdateQueue(false, mip);
-			}
-			break;
-		case update_sock_option::ARP_LOSTCONNECTION:
-			update_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
-			neighbour_it = std::find(neighbour_mip_vec.begin(), neighbour_mip_vec.end(), mip);
-			if (neighbour_it != neighbour_mip_vec.end()) {
-				neighbour_mip_vec.erase(neighbour_it);
-				distance_vector_table.setViaInfinity(mip);
-				addUpdateQueue(false, mip);
-			}
-			break;
-		case update_sock_option::ADVERTISEMENT:
-			//receive:
-			//	from
-			//	ad size
-			//	ad
-			update_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
-			update_sock.read(reinterpret_cast<char*>(&recv_buf_size), sizeof(recv_buf_size));
-			if (recv_buf.size() != recv_buf_size) {
-				recv_buf.resize(recv_buf_size);
-			}
-			update_sock.read(recv_buf.data(), recv_buf.size());
-			advert_table.unpackAdvertisment(recv_buf);
-			if (distance_vector_table.update(mip, advert_table)) {
-				addUpdateQueue(true, mip);
-			}
-			break;
-		default:
-			throw std::runtime_error("Invalid option");
-			break;
+	update_sock.read(reinterpret_cast<char*>(&option), sizeof(option));
+	switch (option)
+	{
+	case update_sock_option::LOCAL_MIP:
+		update_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
+		distance_vector_table.addLocalMip(mip);
+		break;
+	case update_sock_option::ARP_DISCOVERY:
+		update_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
+		neighbour_it = std::find(neighbour_mip_vec.begin(), neighbour_mip_vec.end(), mip);
+		if (neighbour_it == neighbour_mip_vec.end()) {
+			neighbour_mip_vec.push_back(mip);
+			distance_vector_table.addArpDiscovery(mip);
+			addUpdateQueue(false, mip);
 		}
-	}
-	catch (LinuxException::BrokenPipeException & e) {
-		shutdownThreads();
+		break;
+	case update_sock_option::ARP_LOSTCONNECTION:
+		update_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
+		neighbour_it = std::find(neighbour_mip_vec.begin(), neighbour_mip_vec.end(), mip);
+		if (neighbour_it != neighbour_mip_vec.end()) {
+			neighbour_mip_vec.erase(neighbour_it);
+			distance_vector_table.setViaInfinity(mip);
+			addUpdateQueue(false, mip);
+		}
+		break;
+	case update_sock_option::ADVERTISEMENT:
+		//receive:
+		//	from
+		//	ad size
+		//	ad
+		update_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
+		update_sock.read(reinterpret_cast<char*>(&recv_buf_size), sizeof(recv_buf_size));
+		if (recv_buf.size() != recv_buf_size) {
+			recv_buf.resize(recv_buf_size);
+		}
+		update_sock.read(recv_buf.data(), recv_buf.size());
+		advert_table.unpackAdvertisment(recv_buf);
+		if (distance_vector_table.update(mip, advert_table)) {
+			addUpdateQueue(true, mip);
+		}
+		break;
+	default:
+		throw std::runtime_error("Invalid option");
+		break;
 	}
 	std::cout << distance_vector_table.toString() << "\n";
 }
@@ -233,13 +227,7 @@ void receiveLookupSock()
 	//receive:
 	//	mip
 	MIPAddress mip;
-	try {
-		lookup_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
-	}
-	catch (LinuxException::BrokenPipeException & e) {
-		shutdownThreads();
-		return;
-	}
+	lookup_sock.read(reinterpret_cast<char*>(&mip), sizeof(mip));
 	{
 		std::lock_guard<std::mutex> lock(lookup_mutex);
 		lookup_queue.push(mip);
@@ -315,7 +303,7 @@ Signal function.
 */
 void sigintHandler(int signum)
 {
-	//parent process will handle this
+	//empty
 }
 
 /*
@@ -365,12 +353,11 @@ int main(int argc, char** argv)
 		catch (LinuxException::InterruptedException & e) {
 			//if this then interrupted
 			std::cout << "routing_deamon: epoll interrupted\n";
+			epoll.closeResources();
 		}
 	}
 
-	if (running) {
-		shutdownThreads();
-	}
+	shutdownThreads();
 
 	//cleanup
 	std::cout << "routing_deamon joining child threads\n";
@@ -381,7 +368,8 @@ int main(int argc, char** argv)
 		lookup_thread.join();
 	}
 
-	std::cout << "routing_deamon is terminating\n";
+	std::cout << "routing_deamon: terminating\n";
+	
 	return 0;
 }
 

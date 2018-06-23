@@ -21,6 +21,7 @@
 #include "../include/CrossForkExec.hpp"
 #include "../include/EventPoll.hpp"
 #include "../include/Application.hpp"
+#include "../include/TransportInterface.hpp"
 
 /*
 Globals
@@ -116,17 +117,29 @@ Return:
 	void
 Global:
 	transport_sock
+	frame_out_queue
+
 */
 void sendTransportSock()
 {
-	/*
-	std::size_t msg_size = frame.getSize();
-	AnonymousSocketPacket::IovecWrapper<3> iov;
-	iov.setIndex(0, dest);
-	iov.setIndex(1, msg_size);
-	iov.setIndex(2, frame.getData(), msg_size);
-	transport_sock.sendiovec(iov);
-	*/
+	std::cout << "transport_deamon: sendTransportSock()\n";
+	//try to send frames until wouldblock
+	while (!frame_out_queue.empty()) {
+		try {
+			MIPAddress dest = frame_out_queue.front().first;
+			MIPTPFrame & frame = frame_out_queue.front().second;
+			std::size_t msg_size = frame.getSize();
+			AnonymousSocketPacket::IovecWrapper<3> iov;
+			iov.setIndex(0, dest);
+			iov.setIndex(1, msg_size);
+			iov.setIndex(2, frame.getData(), msg_size);
+			transport_sock.sendiovec(iov);
+		}
+		catch (LinuxException::WouldBlockException & e) {
+			return;
+		}
+		frame_out_queue.pop();
+	}
 }
 
 /*
@@ -136,29 +149,51 @@ Return:
 	void
 Global:
 	transport_sock
+	server_vector
+	client_vector
+	frame_out_queue
 */
 void receiveTransportSock()
 {
-	static MIPTPFrame frame;
-	if (frame.getMsgSize() != MIPTPFrame::FRAME_MAX_MSG_SIZE) {
-		frame.setMsgSize(MIPTPFrame::FRAME_MAX_MSG_SIZE);
-	}
-
-	MIPAddress source;
-	std::size_t msg_size;
-	
-	AnonymousSocketPacket::IovecWrapper<3> iov;
-	iov.setIndex(0, source);
-	iov.setIndex(1, msg_size);
-	iov.setIndex(2, frame.getMsg(), frame.getMsgSize());
-
-	transport_sock.recviovec(iov);
-
-	//test
 	std::cout << "transport_deamon: Receive transport_sock" << "\n";
-
-	//TODO: HANDLE RECEIVE HERE!!!!!!!
-
+	try {
+		static MIPTPFrame frame;
+		if (frame.getMsgSize() != MIPTPFrame::FRAME_MAX_MSG_SIZE) {
+			frame.setMsgSize(MIPTPFrame::FRAME_MAX_MSG_SIZE);
+		}
+		MIPAddress source;
+		std::size_t msg_size;
+		AnonymousSocketPacket::IovecWrapper<3> iov;
+		iov.setIndex(0, source);
+		iov.setIndex(1, msg_size);
+		iov.setIndex(2, frame.getMsg(), frame.getMsgSize());
+		transport_sock.recviovec(iov);
+		//find Application to pass frame to
+		Port frame_dest_port = frame.getDest();
+		std::vector<std::unique_ptr<ApplicationServer>>::iterator server_it;
+		std::vector<std::unique_ptr<ApplicationClient>>::iterator client_it;
+		if (server_it = std::find_if(
+			server_vector.begin(),
+			server_vector.end(),
+			[&](std::unique_ptr<ApplicationServer> & ptr) {return frame_dest_port == ptr->getServerPort(); }),
+			server_it != server_vector.end())
+		{
+			//if this then frame is to server_it
+			(*server_it)->receiveFrame(frame, source);
+		}
+		else if (client_it = std::find_if(
+			client_vector.begin(),
+			client_vector.end(),
+			[&](std::unique_ptr<ApplicationClient> & ptr) {return frame_dest_port == ptr->getClientPort(); }),
+			client_it != client_vector.end())
+		{
+			//if this then frame is to client_it
+			(*client_it)->receiveFrame(frame, source);
+		}
+	}
+	catch (LinuxException::WouldBlockException & e) {
+		//if wouldblock then do nothing
+	}
 }
 
 /*
@@ -220,101 +255,28 @@ Global:
 */
 void handlePendingRequest(AnonymousSocket & sock)
 {
-	//<request type : uint8_t> <port : Port>
-	enum ApplicationRequest
-	{
-		request_listen = 1,
-		request_connect = 2
-	};
+	//<request type : uint8_t>
+	
 	std::uint8_t request;
 	sock.readGeneric<std::uint8_t>(request);
-	if (request == request_listen) {
+	if (request ==  TransportInterface::ApplicationRequest::request_listen) {
 		TimerWrapper timer;
 		epoll.addFriend<TimerWrapper>(timer);
 		server_vector.emplace_back(new ApplicationServer(sock, timer, frame_out_queue, isPortFree, getFreePort));
 	}
-	else if (request == request_connect) {
+	else if (request == TransportInterface::ApplicationRequest::request_connect) {
 		TimerWrapper timer;
 		epoll.addFriend<TimerWrapper>(timer);
 		client_vector.emplace_back(new ApplicationClient(sock, timer, frame_out_queue, isPortFree, getFreePort));
 	}
 	else {
-		std::cout << "Invalid application request\n";
+		std::cout << "transport_deamon: Invalid application request\n";
 		bool reply = false;
 		epoll.removeFriend<AnonymousSocket>(sock);
 		sock.writeGeneric<bool>(reply);
 		sock.closeResources();
 	}
 }
-/*
-void handlePendingRequest(AnonymousSocket & sock)
-{
-	//<request type : uint8_t> <port : Port>
-	enum ApplicationRequest
-	{
-		request_listen = 1,
-		request_connect = 2
-	};
-	epoll.removeFriend<AnonymousSocket>(sock);
-	std::uint8_t request;
-	MIPAddress dest_mip;
-	Port request_port;
-	bool reply;
-	sock.readGeneric<std::uint8_t>(request);
-	sock.readGeneric<MIPAddress>(dest_mip);
-	sock.readGeneric<Port>(request_port);
-	if (request == request_listen) {
-		//if this then check if port is free
-		//	if port is free create ApplicationServer object
-		//	else decline request and close connection
-		std::cout << "Application listen request\n";
-		if (isPortFree(request_port)) {
-			sock.enableNonBlock();
-			server_vector.emplace_back(new ApplicationServer(request_port, sock, frame_out_queue));
-			epoll.add(sock.getFd(), EPOLLET | EPOLLIN);
-			reply = true;
-			sock.writeGeneric<bool>(reply);
-		}
-		else {
-			std::cout << "Port not free\n";
-			reply = false;
-			sock.writeGeneric<bool>(reply);
-			sock.closeResources();
-		}
-	}
-	else if (request == request_connect) {
-		//if this then create ApplicationClient object and attemt handshake
-		std::cout << "Application connect request\n";
-		Port client_port = getFreePort();
-		if (client_port != 0) {
-			sock.enableNonBlock();
-			client_vector.emplace_back(new ApplicationClient(client_port, request_port, sock, frame_out_queue));
-			epoll.add(sock.getFd(), EPOLLET | EPOLLIN);
-		}
-		else {
-			std::cout << "No free port\n";
-			reply = false;
-			sock.writeGeneric<bool>(reply);
-			sock.closeResources();
-		}
-	}
-	else {
-		std::cout << "Invalid application request\n";
-		reply = false;
-		sock.writeGeneric<bool>(reply);
-		sock.closeResources();
-	}
-}
-*/
-
-/*
-Send on transport_sock.
-Parameters:
-Return:
-	void
-Global:
-	transport_sock
-*/
 
 /*
 Signal function.
@@ -371,7 +333,7 @@ int main(int argc, char** argv)
 
 	while (!epoll.isClosed()) {
 		try {
-			auto & event_vec = epoll.wait(20, 10);
+			auto & event_vec = epoll.wait(20);
 			for (auto & ev : event_vec) {
 				std::vector<AnonymousSocket>::iterator pending_it;
 				std::vector<std::unique_ptr<ApplicationServer>>::iterator server_it;
@@ -392,7 +354,7 @@ int main(int argc, char** argv)
 					[&](AnonymousSocket & s) { return s.getFd() == in_fd; }),
 					pending_it != pending_request_vector.end()) 
 				{
-					std::cout << "pending_it\n";
+					std::cout << "transport_deamon: pending_it\n";
 					handlePendingRequest(*pending_it);
 					pending_request_vector.erase(pending_it);
 				}
@@ -402,7 +364,7 @@ int main(int argc, char** argv)
 					[&](std::unique_ptr<ApplicationServer> & ptr) { return ptr->getSock().getFd() == in_fd; }),
 					server_it != server_vector.end())
 				{
-					std::cout << "server_it\n";
+					std::cout << "transport_deamon: server_it\n";
 					handleApplicationServerSock(**server_it);
 				}
 				else if (client_it = std::find_if(
@@ -411,7 +373,7 @@ int main(int argc, char** argv)
 					[&](std::unique_ptr<ApplicationClient> & ptr) { return ptr->getSock().getFd() == in_fd; }),
 					client_it != client_vector.end())
 				{
-					std::cout << "client_it\n";
+					std::cout << "transport_deamon: client_it\n";
 					handleApplicationClientSock(**client_it);
 				}
 				else {
@@ -425,14 +387,14 @@ int main(int argc, char** argv)
 		}
 	}
 
-	std::cout << "transport_deamon joining mip_deamon\n";
-
 	transport_sock.closeResources();
 	application_sock.closeResources();
 
+	std::cout << "transport_deamon: joining MIP_deamon\n";
+
 	mip_deamon.join();
 
-	std::cout << "transport_deamon terminating\n";
+	std::cout << "transport_deamon: terminating\n";
 
 	return 0;
 }

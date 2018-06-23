@@ -121,6 +121,7 @@
     <ClInclude Include="..\..\include\MIPTPFrame.hpp" />
     <ClInclude Include="..\..\include\RawSock.hpp" />
     <ClInclude Include="..\..\include\TimerWrapper.hpp" />
+    <ClInclude Include="..\..\include\TransportInterface.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\AddressTypes.cpp" />
@@ -137,6 +138,7 @@
     <ClCompile Include="..\..\src\RawSock.cpp" />
     <ClCompile Include="..\..\src\routing_deamon.cpp" />
     <ClCompile Include="..\..\src\TimerWrapper.cpp" />
+    <ClCompile Include="..\..\src\TransportInterface.cpp" />
     <ClCompile Include="..\..\src\transport_deamon.cpp" />
     <ClCompile Include="..\..\test\getinterface\getinterface.c" />
   </ItemGroup>

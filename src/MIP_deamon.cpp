@@ -290,9 +290,6 @@ void receiveUpdateSock()
 	frame.setMsgSize(ad_size);
 	update_sock.read(frame.getMsg(), ad_size);
 	auto pair_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == dest_mip; });
-	//if (pair_it == arp_pair_vec.end()) {
-	//	throw std::runtime_error("Should have found pair");
-	//}
 	if (pair_it != arp_pair_vec.end()) {
 		ARPPair & pair = (*pair_it);
 		frame.setMipTRA(MIPFrame::R);
@@ -567,7 +564,11 @@ int main(int argc, char** argv)
 	update_sock.closeResources();
 	lookup_sock.closeResources();
 
+	std::cout << "MIP_deamon: joining routing_deamon\n";
+
 	routing_deamon.join();
+
+	std::cout << "MIP_deamon: terminating\n";
 	
 	return EXIT_SUCCESS;
 }
