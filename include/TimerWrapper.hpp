@@ -47,8 +47,25 @@ public:
 		fd
 	*/
 	int getFd();
+
+	/*
+	Close (release resources).
+	Parameters:
+	Return:
+		void
+	*/
+	void closeResources();
+
+	/*
+	Check if fd is closed.
+	Parameters:
+	Return:
+		if true close, else valid
+	*/
+	bool isClosed();
 private:
 	int m_fd;
+	bool m_closed;
 
 	/*
 	timespec to ms.

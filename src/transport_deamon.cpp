@@ -158,16 +158,18 @@ void receiveTransportSock()
 	std::cout << "transport_deamon: Receive transport_sock" << "\n";
 	try {
 		static MIPTPFrame frame;
-		if (frame.getMsgSize() != MIPTPFrame::FRAME_MAX_MSG_SIZE) {
-			frame.setMsgSize(MIPTPFrame::FRAME_MAX_MSG_SIZE);
+		if (frame.getSize() != MIPTPFrame::FRAME_MAX_SIZE) {
+			frame.setSize(MIPTPFrame::FRAME_MAX_SIZE);
 		}
 		MIPAddress source;
 		std::size_t msg_size;
 		AnonymousSocketPacket::IovecWrapper<3> iov;
 		iov.setIndex(0, source);
 		iov.setIndex(1, msg_size);
-		iov.setIndex(2, frame.getMsg(), frame.getMsgSize());
+		iov.setIndex(2, frame.getData(), frame.getSize());
 		transport_sock.recviovec(iov);
+		//resize frame to msg_size
+		frame.setSize(msg_size);
 		//find Application to pass frame to
 		Port frame_dest_port = frame.getDest();
 		std::vector<std::unique_ptr<ApplicationServer>>::iterator server_it;
@@ -180,6 +182,9 @@ void receiveTransportSock()
 		{
 			//if this then frame is to server_it
 			(*server_it)->receiveFrame(frame, source);
+			if ((*server_it)->getStage() == ApplicationServer::stage_failure) {
+				server_vector.erase(server_it);
+			}
 		}
 		else if (client_it = std::find_if(
 			client_vector.begin(),
@@ -189,6 +194,9 @@ void receiveTransportSock()
 		{
 			//if this then frame is to client_it
 			(*client_it)->receiveFrame(frame, source);
+			if ((*client_it)->getStage() == ApplicationClient::stage_failure) {
+				client_vector.erase(client_it);
+			}
 		}
 	}
 	catch (LinuxException::WouldBlockException & e) {
@@ -209,7 +217,7 @@ Global:
 void receiveApplicationSock()
 {
 	AnonymousSocket sock = application_sock.acceptConnection();
-	epoll.addFriend<AnonymousSocket>(sock);
+	epoll.add(sock.getFd(), EPOLLET | EPOLLIN);
 	pending_request_vector.push_back(sock);
 }
 
@@ -220,11 +228,17 @@ Parameters:
 Return:
 	void
 Global:
+	server_vector
 	frame_out_vec
 */
-void handleApplicationServerSock(ApplicationServer & server)
+void handleApplicationServerSock(std::vector<std::unique_ptr<ApplicationServer>>::iterator & server_it)
 {
-	server.handleSock();
+	(*server_it)->handleSock();
+	if ((*server_it)->getStage() == ApplicationServer::stage_failure) {
+		server_vector.erase(server_it);
+		
+		std::cout << "transport_deamon: ApplicationServer::stage_failure\n";
+	}
 }
 
 /*
@@ -234,11 +248,17 @@ Parameters:
 Return:
 	void
 Global:
+	client_Vector
 	frame_out_vec
 */
-void handleApplicationClientSock(ApplicationClient & client)
+void handleApplicationClientSock(std::vector<std::unique_ptr<ApplicationClient>>::iterator & client_it)
 {
-	client.handleSock();
+	(*client_it)->handleSock();
+	if ((*client_it)->getStage() == ApplicationClient::stage_failure) {
+		client_vector.erase(client_it);
+
+		std::cout << "transport_deamon: ApplicationClient::stage_failure\n";
+	}
 }
 
 /*
@@ -249,16 +269,17 @@ Return:
 	void
 Global:
 	epoll
+	pending_request_vector
 	server_vector
 	client_vector
 	frame_out_queue
 */
-void handlePendingRequest(AnonymousSocket & sock)
+void handlePendingRequest(std::vector<AnonymousSocket>::iterator & pending_it)
 {
 	//<request type : uint8_t>
-	
+	AnonymousSocket & sock = *pending_it;
 	std::uint8_t request;
-	sock.readGeneric<std::uint8_t>(request);
+	pending_it->readGeneric<std::uint8_t>(request);
 	if (request ==  TransportInterface::ApplicationRequest::request_listen) {
 		TimerWrapper timer;
 		epoll.addFriend<TimerWrapper>(timer);
@@ -276,6 +297,7 @@ void handlePendingRequest(AnonymousSocket & sock)
 		sock.writeGeneric<bool>(reply);
 		sock.closeResources();
 	}
+	pending_request_vector.erase(pending_it);
 }
 
 /*
@@ -283,17 +305,19 @@ Signal function.
 */
 void sigintHandler(int signum)
 {
-	epoll.closeResources();
+	
 }
 
+const char* help_string = "./transport_deamon <named socket name> <timeout> [mip addresses]";
 /*
-args: ./transport_deamon <socket_application> <timeout> [mip addresses]
+args: ./transport_deamon <named socket name> <timeout> [mip addresses]
 */
 int main(int argc, char** argv)
 {
 	//parse args
 	if (argc < 4) {
 		std::cerr << "Too few args\n";
+		std::cout << help_string << "\n";
 		return EXIT_FAILURE;
 	}
 
@@ -340,12 +364,14 @@ int main(int argc, char** argv)
 				std::vector<std::unique_ptr<ApplicationClient>>::iterator client_it;
 				int in_fd = ev.data.fd;
 				if (in_fd == transport_sock.getFd()) {
+					std::cout << "transport_deamon: transport_sock\n";
 					//try to receive
 					receiveTransportSock();
 					//try to send
 					sendTransportSock();
 				}
 				else if (in_fd == application_sock.getFd()) {
+					std::cout << "transport_deamon: application_sock\n";
 					receiveApplicationSock();
 				}
 				else if (pending_it = std::find_if(
@@ -355,8 +381,7 @@ int main(int argc, char** argv)
 					pending_it != pending_request_vector.end()) 
 				{
 					std::cout << "transport_deamon: pending_it\n";
-					handlePendingRequest(*pending_it);
-					pending_request_vector.erase(pending_it);
+					handlePendingRequest(pending_it);
 				}
 				else if (server_it = std::find_if(
 					server_vector.begin(),
@@ -365,7 +390,7 @@ int main(int argc, char** argv)
 					server_it != server_vector.end())
 				{
 					std::cout << "transport_deamon: server_it\n";
-					handleApplicationServerSock(**server_it);
+					handleApplicationServerSock(server_it);
 				}
 				else if (client_it = std::find_if(
 					client_vector.begin(),
@@ -374,16 +399,19 @@ int main(int argc, char** argv)
 					client_it != client_vector.end())
 				{
 					std::cout << "transport_deamon: client_it\n";
-					handleApplicationClientSock(**client_it);
+					handleApplicationClientSock(client_it);
 				}
 				else {
 					assert(false);
 				}
+				//try to send
+				sendTransportSock();
 			}
 		}
 		catch (LinuxException::InterruptedException & e) {
 			//if this then interrupted
 			std::cout << "transport_deamon: epoll interrupted\n";
+			epoll.closeResources();
 		}
 	}
 

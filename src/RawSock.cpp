@@ -126,7 +126,7 @@ namespace RawSock
 		if (ret == -1) {
 			throw LinuxException::Error("recv()");
 		}
-		frame.setSize(static_cast<std::size_t>(ret));
+		frame.setMsgSize(frame.getMsgSize());
 	}
 
 	int MIPRawSock::getFd()

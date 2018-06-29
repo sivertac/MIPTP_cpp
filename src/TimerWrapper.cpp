@@ -3,10 +3,12 @@
 
 #include "../include/TimerWrapper.hpp"
 
-TimerWrapper::TimerWrapper()
+TimerWrapper::TimerWrapper() :
+	m_closed(false)
 {
 	m_fd = timerfd_create(CLOCK_REALTIME, 0);
 	if (m_fd == -1) {
+		m_closed = true;
 		throw LinuxException::Error("timerfd_create()");
 	}
 }
@@ -41,6 +43,17 @@ int TimerWrapper::readExpiredTime()
 int TimerWrapper::getFd()
 {
 	return m_fd;
+}
+
+void TimerWrapper::closeResources()
+{
+	close(m_fd);
+	m_closed = true;
+}
+
+bool TimerWrapper::isClosed()
+{
+	return m_closed;
 }
 
 int TimerWrapper::timespecToMs(timespec & t)

@@ -137,6 +137,8 @@
     <ClCompile Include="..\..\src\MIP_deamon.cpp" />
     <ClCompile Include="..\..\src\RawSock.cpp" />
     <ClCompile Include="..\..\src\routing_deamon.cpp" />
+    <ClCompile Include="..\..\src\test_client.cpp" />
+    <ClCompile Include="..\..\src\test_server.cpp" />
     <ClCompile Include="..\..\src\TimerWrapper.cpp" />
     <ClCompile Include="..\..\src\TransportInterface.cpp" />
     <ClCompile Include="..\..\src\transport_deamon.cpp" />

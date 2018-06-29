@@ -66,9 +66,6 @@ void shutdownThreads()
 			running = false;
 		}
 	}
-	if (epoll.isClosed()) {
-		epoll.closeResources();
-	}
 	update_blocker.notify_one();
 	lookup_blocker.notify_one();
 }

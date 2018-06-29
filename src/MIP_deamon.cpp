@@ -204,29 +204,22 @@ void receiveTransportSock()
 	if (frame.getMsgSize() != MIPFrame::MSG_MAX_SIZE) {
 		frame.setMsgSize(MIPFrame::MSG_MAX_SIZE);
 	}
-	
 	MIPAddress dest;
 	std::size_t msg_size;
-
 	AnonymousSocketPacket::IovecWrapper<3> iov;
 	iov.setIndex(0, dest);
 	iov.setIndex(1, msg_size);
 	iov.setIndex(2, frame.getMsg(), frame.getMsgSize());
-
 	transport_sock.recviovec(iov);
-
 	if (frame.getMsgSize() != msg_size) {
 		frame.setMsgSize(msg_size);
 	}
-
 	frame.setMipTRA(MIPFrame::T);
 	frame.setMipDest(dest);
 	frame.setMipTTL(0xff);
 	frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
 	lookup_queue.emplace(false, frame);
 	lookup_sock.write(reinterpret_cast<char*>(&dest), sizeof(dest));
-
-	std::cout << "MIP_deamon receive transport_sock\n";
 }
 
 /*
@@ -257,8 +250,6 @@ void receiveLookupSock()
 			frame.setEthSource(eth_source);
 			frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
 			pair.sock->sendMipFrame(frame);
-
-			std::cout << "MIP_deamon sending transport frame to mip: " << (int)frame.getMipDest() << "\n";
 		}
 		lookup_queue.pop();
 	}
@@ -390,9 +381,6 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 			iov.setIndex(1, msg_size);
 			iov.setIndex(2, mip_frame.getMsg(), msg_size);
 			transport_sock.sendiovec(iov);
-			//transport_sock.write(reinterpret_cast<char*>(&source_mip), sizeof(source_mip));
-			//transport_sock.write(reinterpret_cast<char*>(&msg_size), sizeof(msg_size));
-			//transport_sock.write(mip_frame.getMsg(), msg_size);
 		}
 		break;
 	default:
@@ -440,7 +428,6 @@ Signal function.
 */
 void sigintHandler(int signum)
 {
-	epoll.closeResources();
 }
 
 /*
@@ -558,6 +545,7 @@ int main(int argc, char** argv)
 		catch (LinuxException::InterruptedException & e) {
 			//if this then interrupted
 			std::cout << "MIP_deamon: epoll interrupted\n";
+			epoll.closeResources();
 		}
 	}
 

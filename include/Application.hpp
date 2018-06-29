@@ -200,7 +200,7 @@ class ApplicationClient
 {
 public:
 	enum ConnectStage {
-		stage_request,
+		stage_application,
 		stage_wait_reply,
 		stage_connected,
 		stage_failure
@@ -281,7 +281,7 @@ public:
 	*/
 	ConnectStage getStage();
 private:
-	bool m_connected = false;
+	ConnectStage m_stage;
 	MIPAddress m_dest_mip = 0;
 	Port m_server_port = 0;
 	Port m_client_port = 0;

@@ -16,6 +16,31 @@
 #include "../include/AddressTypes.hpp"
 #include "../include/CrossIPC.hpp"
 
+int main(int argc, char** argv)
+{
+	
+	MIPTPFrame miptp_frame;
+	MIPFrame mip_frame;
+
+	miptp_frame.setMsgSize(0);
+
+
+	mip_frame.setMsgSize(MIPFrame::MSG_MAX_SIZE);
+	std::memcpy(mip_frame.getMsg(), miptp_frame.getData(), miptp_frame.getSize());
+
+	mip_frame.setMsgSize(miptp_frame.getSize());
+
+	std::cout << miptp_frame.getMsgSize() << "\n";
+	std::cout << miptp_frame.getSize() << "\n";
+
+	std::cout << mip_frame.getMsgSize() << "\n";
+	std::cout << mip_frame.getSize() << "\n";
+
+	return 0;
+}
+
+
+/*
 AnonymousSocketPacket sock1;
 AnonymousSocketPacket sock2;
 
@@ -65,6 +90,8 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+
+*/
 
 /*
 int main(int argc, char** argv)
