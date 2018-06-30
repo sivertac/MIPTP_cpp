@@ -21,9 +21,25 @@ int main(int argc, char** argv)
 	AnonymousSocket sock = TransportInterface::requestConnect(argv[1], std::atoi(argv[2]), std::atoi(argv[3]));
 
 	std::cout << "test_client: connected\n";
+	std::cout << "test_client: start transmission\n";
+
+	std::string str("This is a string from test_client");
+
+	std::size_t msg_size = str.size();
+
+	std::size_t ret = sock.writeGeneric(msg_size);
+	ret += sock.write(str.data(), msg_size);
+
+	msg_size += sizeof(ret);
+
+	std::cout << "test_client: transmission done\n";
+	std::cout << "test_client: msg_size: " << msg_size << "\n";
+	std::cout << "test_client: ret: " << ret << "\n";
 
 	sock.closeResources();
 	
+	std::cout << "test_client: terminating\n";
+
 	return 0;
 }
 

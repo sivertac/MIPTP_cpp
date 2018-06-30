@@ -9,7 +9,7 @@ BINARIES = main MIP_deamon routing_deamon transport_deamon test_client test_serv
 OBJECTS =	MIPFrame.o CrossForkExec.o CrossIPC.o \
 			RawSock.o AddressTypes.o LinuxException.o \
 			EventPoll.o DistanceVectorTable.o TimerWrapper.o \
-			Application.o MIPTPFrame.o TransportInterface.o
+			MIPTPFrame.o TransportInterface.o ClientHandler.o
 
 FILES =	$(BINARIES) $(OBJECTS)
 
@@ -62,14 +62,14 @@ DistanceVectorTable.o: src/DistanceVectorTable.cpp include/DistanceVectorTable.h
 TimerWrapper.o: src/TimerWrapper.cpp include/TimerWrapper.hpp
 	$(CC) $(FLAGS) -c src/TimerWrapper.cpp
 
-Application.o: src/Application.cpp include/Application.hpp
-	$(CC) $(FLAGS) -c src/Application.cpp
-
 MIPTPFrame.o: src/MIPTPFrame.cpp include/MIPTPFrame.hpp
 	$(CC) $(FLAGS) -c src/MIPTPFrame.cpp
 
 TransportInterface.o: src/TransportInterface.cpp include/TransportInterface.hpp
 	$(CC) $(FLAGS) -c src/TransportInterface.cpp
+
+ClientHandler.o: src/ClientHandler.cpp include/ClientHandler.hpp
+	$(CC) $(FLAGS) -c src/ClientHandler.cpp
 
 clean:
 	rm $(FILES)

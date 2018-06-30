@@ -20,7 +20,19 @@ void ApplicationClient::receiveFrame(MIPTPFrame & frame, MIPAddress source)
 		//if this then check for handshake reply
 		if (frame.getType() == MIPTPFrame::reply) {
 			//if this then 
+			//tell application that we're connected
+			std::uint8_t reply = TransportInterface::reply_success;
+			m_sock.writeGeneric(reply);
+			
+			//init windows
+			m_send_window = std::unique_ptr<SlidingWindow::SendWindow<WINDOW_SIZE>>(
+				new SlidingWindow::SendWindow<WINDOW_SIZE>(m_out_queue, m_sock, m_dest_mip, m_client_port, m_server_port));
+			m_receive_window = std::unique_ptr<SlidingWindow::ReceiveWindow<WINDOW_SIZE>>(
+				new SlidingWindow::ReceiveWindow<WINDOW_SIZE>(m_out_queue, m_msg_buffer, m_dest_mip, m_client_port, m_server_port));
+
 			m_stage = stage_connected;
+
+			std::cout << "transport_deamon: ApplicationClient connected\n";
 		}
 	}
 	else if (m_stage == stage_connected) {
@@ -43,51 +55,75 @@ void ApplicationClient::receiveFrame(MIPTPFrame & frame, MIPAddress source)
 
 void ApplicationClient::handleSock()
 {
-	if (m_stage == stage_application) {
-		m_sock.readGeneric(m_dest_mip);
-		m_sock.readGeneric(m_server_port);
-		//try to aquire a client port
-		m_client_port = m_get_free_port();
-		if (m_client_port == 0) {
-			std::uint8_t reply = TransportInterface::reply_usedport;
-			m_sock.writeGeneric(reply);
-			m_sock.closeResources();
-			m_stage = stage_failure;
-			return;
-		}
-		//then send request to server
-		MIPTPFrame frame;
-		frame.setMsgSize(0);
-		frame.setType(MIPTPFrame::request);
-		frame.setDest(m_server_port);
-		frame.setSource(m_client_port);
-		frame.setSequenceNumber(0);
-		m_out_queue.emplace(m_dest_mip, frame);
-		m_stage = stage_wait_reply;
-
-		std::cout << "transport_deamon: ApplicationClient connected\n";
-		std::cout << "transport_deamon: requesting at port: " << (int)m_server_port << "\n";
-		std::cout << "transport_deamon: aquired port: " << (int)m_client_port << "\n";
-	}
-	else if (m_stage == stage_connected) {
-		//try to read
-		m_send_window->loadFrames();
-		//try to write data
-		if (!m_msg_buffer.empty()) {
-			std::size_t ret;
+	try {
+		if (m_stage == stage_application) {
 			try {
-				ret = m_sock.write(m_msg_buffer.data(), m_msg_buffer.size());
+				m_sock.readGeneric(m_dest_mip);
+				m_sock.readGeneric(m_server_port);
+				//try to aquire a client port
+				m_client_port = m_get_free_port();
+				if (m_client_port == 0) {
+					std::uint8_t reply = TransportInterface::reply_usedport;
+					m_sock.writeGeneric(reply);
+					m_sock.closeResources();
+					m_stage = stage_failure;
+					return;
+				}
+				//then send request to server
+				MIPTPFrame frame;
+				frame.setMsgSize(0);
+				frame.setType(MIPTPFrame::request);
+				frame.setDest(m_server_port);
+				frame.setSource(m_client_port);
+				frame.setSequenceNumber(0);
+				m_out_queue.emplace(m_dest_mip, frame);
+				m_stage = stage_wait_reply;
 			}
 			catch (LinuxException::WouldBlockException & e) {
+				m_stage = stage_failure;
 				return;
 			}
-			if (ret < m_msg_buffer.size()) {
-				m_msg_buffer.erase(m_msg_buffer.begin(), m_msg_buffer.begin() + ret);
-			}
-			else {
-				m_msg_buffer.clear();
+
+			std::cout << "transport_deamon: ApplicationClient request\n";
+			std::cout << "transport_deamon: requesting at port: " << (int)m_server_port << "\n";
+			std::cout << "transport_deamon: aquired port: " << (int)m_client_port << "\n";
+		}
+		else if (m_stage == stage_connected) {
+			//try to read
+			m_send_window->loadFrames();
+			m_send_window->queueFrames();
+
+			//try to write data
+			if (!m_msg_buffer.empty()) {
+				std::size_t ret;
+				try {
+					ret = m_sock.write(m_msg_buffer.data(), m_msg_buffer.size());
+				}
+				catch (LinuxException::WouldBlockException & e) {
+					return;
+				}
+				if (ret < m_msg_buffer.size()) {
+					m_msg_buffer.erase(m_msg_buffer.begin(), m_msg_buffer.begin() + ret);
+				}
+				else {
+					m_msg_buffer.clear();
+				}
 			}
 		}
+	}
+	catch (LinuxException::BrokenPipeException & e) {
+		if (m_send_window->isEmpty()) {
+			m_stage = stage_failure;
+		}
+		return;
+	}
+}
+
+void ApplicationClient::handleTimer()
+{
+	if (m_stage == stage_connected) {
+		m_send_window->queueFrames();
+		m_receive_window->queueAck();
 	}
 }
 
@@ -137,6 +173,11 @@ void ApplicationServer::receiveFrame(MIPTPFrame & frame, MIPAddress source)
 		if (frame.getType() == MIPTPFrame::request) {
 			m_client_port = frame.getSource();
 			m_dest_mip = source;
+
+			//tell application that it is connected
+			std::uint8_t reply = TransportInterface::reply_success;
+			m_sock.writeGeneric(reply);
+
 			//queue reply
 			frame.setType(MIPTPFrame::reply);
 			frame.setSource(m_server_port);
@@ -149,6 +190,10 @@ void ApplicationServer::receiveFrame(MIPTPFrame & frame, MIPAddress source)
 			m_receive_window = std::unique_ptr<SlidingWindow::ReceiveWindow<WINDOW_SIZE>>(
 				new SlidingWindow::ReceiveWindow<WINDOW_SIZE>(m_out_queue, m_msg_buffer, m_dest_mip, m_server_port, m_client_port));
 			m_stage = stage_connected;
+
+			std::cout << "transport_deamon: ApplicationServer connected\n";
+			std::cout << "transport_deamon: client address: " << (int)m_dest_mip << "\n";
+			std::cout << "transport_deamon: client port: " << (int)m_client_port << "\n";
 		}
 	}
 	else if (m_stage == stage_connected) {
@@ -171,46 +216,54 @@ void ApplicationServer::receiveFrame(MIPTPFrame & frame, MIPAddress source)
 
 void ApplicationServer::handleSock()
 {
-	if (m_stage == stage_application) {
-		Port port;
-		m_sock.readGeneric(port);
-		if (m_is_port_free(port)) {
-			//if this then set server port and continue
-			m_server_port = port;
-			std::uint8_t reply = TransportInterface::reply_success;
-			m_sock.writeGeneric(reply);
-			m_stage = stage_listen;
+	try {
+		if (m_stage == stage_application) {
+			Port port;
+			m_sock.readGeneric(port);
+			if (m_is_port_free(port)) {
+				//if this then set server port and continue
+				m_server_port = port;
+				m_stage = stage_listen;
 
-			std::cout << "transport_deamon: ApplicationServer connected\n";
-			std::cout << "transport_deamon: listening at port: " << (int)m_server_port << "\n";
-		}
-		else {
-			//if this decline request and set stage to failure
-			std::uint8_t reply = TransportInterface::reply_usedport;
-			m_sock.writeGeneric(reply);
-			m_sock.closeResources();
-			m_stage = stage_failure;
-		}
-	}
-	else if (m_stage == stage_connected) {
-		//try to read
-		m_send_window->loadFrames();
-		//try to write data
-		if (!m_msg_buffer.empty()) {
-			std::size_t ret;
-			try {
-				ret = m_sock.write(m_msg_buffer.data(), m_msg_buffer.size());
-			}
-			catch (LinuxException::WouldBlockException & e) {
-				return;
-			}
-			if (ret < m_msg_buffer.size()) {
-				m_msg_buffer.erase(m_msg_buffer.begin(), m_msg_buffer.begin() + ret);
+				std::cout << "transport_deamon: ApplicationServer listen\n";
+				std::cout << "transport_deamon: listening at port: " << (int)m_server_port << "\n";
 			}
 			else {
-				m_msg_buffer.clear();
+				//if this decline request and set stage to failure
+				std::uint8_t reply = TransportInterface::reply_usedport;
+				m_sock.writeGeneric(reply);
+				m_sock.closeResources();
+				m_stage = stage_failure;
 			}
 		}
+		else if (m_stage == stage_connected) {
+			//try to read
+			m_send_window->loadFrames();
+			m_send_window->queueFrames();
+
+			//try to write data
+			if (!m_msg_buffer.empty()) {
+				std::size_t ret;
+				try {
+					ret = m_sock.write(m_msg_buffer.data(), m_msg_buffer.size());
+				}
+				catch (LinuxException::WouldBlockException & e) {
+					return;
+				}
+				if (ret < m_msg_buffer.size()) {
+					m_msg_buffer.erase(m_msg_buffer.begin(), m_msg_buffer.begin() + ret);
+				}
+				else {
+					m_msg_buffer.clear();
+				}
+			}
+		}
+	}
+	catch (LinuxException::BrokenPipeException & e) {
+		if (m_send_window->isEmpty()) {
+			m_stage = stage_failure;
+		}
+		return;
 	}
 }
 
@@ -218,6 +271,7 @@ void ApplicationServer::handleTimer()
 {
 	if (m_stage == stage_connected) {
 		m_send_window->queueFrames();
+		m_receive_window->queueAck();
 	}
 }
 

@@ -30,6 +30,7 @@ ChildProcess mip_deamon;
 EventPoll epoll;
 AnonymousSocketPacket transport_sock;
 NamedSocket application_sock;
+int application_timeout;
 std::vector<std::unique_ptr<ApplicationServer>> server_vector;
 std::vector<std::unique_ptr<ApplicationClient>> client_vector;
 std::vector<AnonymousSocket> pending_request_vector;
@@ -198,6 +199,9 @@ void receiveTransportSock()
 				client_vector.erase(client_it);
 			}
 		}
+		else {
+			std::cout << "transport_deamon: nothing at port: " << (int)frame_dest_port << "\n";
+		}
 	}
 	catch (LinuxException::WouldBlockException & e) {
 		//if wouldblock then do nothing
@@ -224,7 +228,7 @@ void receiveApplicationSock()
 /*
 Handle ApplicationServer sock.
 Parameters:
-	server		ref to ApplicationServer
+	server_it		ref to iterator
 Return:
 	void
 Global:
@@ -244,7 +248,7 @@ void handleApplicationServerSock(std::vector<std::unique_ptr<ApplicationServer>>
 /*
 Handle ApplicationClient sock.
 Parameters:
-	client		ref to ApplicationClient
+	client_it		ref to iterator
 Return:
 	void
 Global:
@@ -258,6 +262,52 @@ void handleApplicationClientSock(std::vector<std::unique_ptr<ApplicationClient>>
 		client_vector.erase(client_it);
 
 		std::cout << "transport_deamon: ApplicationClient::stage_failure\n";
+	}
+}
+
+/*
+Handle ApplicationServer timer.
+Parameters:
+	server_it		ref to iterator
+Return:
+	void
+Global:
+	server_vector
+	frame_out_vec
+*/
+void handleApplicationServerTimer(std::vector<std::unique_ptr<ApplicationServer>>::iterator & server_it)
+{
+	(*server_it)->handleTimer();
+	if ((*server_it)->getStage() == ApplicationServer::stage_failure) {
+		server_vector.erase(server_it);
+
+		std::cout << "transport_deamon: ApplicationServer::stage_failure\n";
+	}
+	else {
+		(*server_it)->getTimer().setExpirationFromNow(application_timeout);
+	}
+}
+
+/*
+Handle ApplicationClient timer.
+Parameters:
+	client_it		ref to iterator
+Return:
+	void
+Global:
+	client_Vector
+	frame_out_vec
+*/
+void handleApplicationClientTimer(std::vector<std::unique_ptr<ApplicationClient>>::iterator & client_it)
+{
+	(*client_it)->handleTimer();
+	if ((*client_it)->getStage() == ApplicationClient::stage_failure) {
+		client_vector.erase(client_it);
+
+		std::cout << "transport_deamon: ApplicationClient::stage_failure\n";
+	}
+	else {
+		(*client_it)->getTimer().setExpirationFromNow(application_timeout);
 	}
 }
 
@@ -283,11 +333,13 @@ void handlePendingRequest(std::vector<AnonymousSocket>::iterator & pending_it)
 	if (request ==  TransportInterface::ApplicationRequest::request_listen) {
 		TimerWrapper timer;
 		epoll.addFriend<TimerWrapper>(timer);
+		timer.setExpirationFromNow(100);
 		server_vector.emplace_back(new ApplicationServer(sock, timer, frame_out_queue, isPortFree, getFreePort));
 	}
 	else if (request == TransportInterface::ApplicationRequest::request_connect) {
 		TimerWrapper timer;
 		epoll.addFriend<TimerWrapper>(timer);
+		timer.setExpirationFromNow(100);
 		client_vector.emplace_back(new ApplicationClient(sock, timer, frame_out_queue, isPortFree, getFreePort));
 	}
 	else {
@@ -320,6 +372,7 @@ int main(int argc, char** argv)
 		std::cout << help_string << "\n";
 		return EXIT_FAILURE;
 	}
+	application_timeout = std::atoi(argv[2]);
 
 	//signal
 	struct sigaction sa;
@@ -389,7 +442,7 @@ int main(int argc, char** argv)
 					[&](std::unique_ptr<ApplicationServer> & ptr) { return ptr->getSock().getFd() == in_fd; }),
 					server_it != server_vector.end())
 				{
-					std::cout << "transport_deamon: server_it\n";
+					std::cout << "transport_deamon: server_it sock\n";
 					handleApplicationServerSock(server_it);
 				}
 				else if (client_it = std::find_if(
@@ -398,11 +451,29 @@ int main(int argc, char** argv)
 					[&](std::unique_ptr<ApplicationClient> & ptr) { return ptr->getSock().getFd() == in_fd; }),
 					client_it != client_vector.end())
 				{
-					std::cout << "transport_deamon: client_it\n";
+					std::cout << "transport_deamon: client_it sock\n";
 					handleApplicationClientSock(client_it);
 				}
+				else if (server_it = std::find_if(
+					server_vector.begin(),
+					server_vector.end(),
+					[&](std::unique_ptr<ApplicationServer> & ptr) {return ptr->getTimer().getFd() == in_fd; }),
+					server_it != server_vector.end())
+				{
+					std::cout << "transport_deamon: server_it timer\n";
+					handleApplicationServerTimer(server_it);
+				}
+				else if (client_it = std::find_if(
+					client_vector.begin(),
+					client_vector.end(),
+					[&](std::unique_ptr<ApplicationClient> & ptr) {return ptr->getTimer().getFd() == in_fd; }),
+					client_it != client_vector.end())
+				{
+					std::cout << "transport_deamon: client_it timer\n";
+					handleApplicationClientTimer(client_it);
+				}
 				else {
-					assert(false);
+					//assert(false);
 				}
 				//try to send
 				sendTransportSock();

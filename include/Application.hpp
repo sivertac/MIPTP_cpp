@@ -41,15 +41,20 @@ namespace SlidingWindow
 			m_dest_port(dest_port)
 		{
 			assert(m_in_sock.isNonBlock());
+			
+			//construct container
+			std::for_each(m_frame_container.begin(), m_frame_container.end(), [](std::unique_ptr<MIPTPFrame> & ptr) {ptr = std::unique_ptr<MIPTPFrame>(new MIPTPFrame()); });
 		}
 
 		void receiveFrame(MIPTPFrame & frame)
 		{
+			std::cout << "transport_deamon: SendWindow::receiveFrame()\n";
 			assert(frame.getType() == MIPTPFrame::sack);
 			int seq_num = frame.getSequenceNumber();
 			if (seqInsideWindow(seq_num)) {
 				if (seq_num != m_seq_base) {
 					moveWindow(calcMoves(seq_num));
+					std::cout << "move Window\n";
 				}
 				queueFrames();
 			}
@@ -57,6 +62,7 @@ namespace SlidingWindow
 
 		void queueFrames()
 		{
+			std::cout << "transport_deamon: SendWindow::queueFrames()\n";
 			for (int i = 0; i < m_used_slots; ++i) {
 				m_out_queue.emplace(m_dest_mip, *m_frame_container[i]);
 			}
@@ -64,8 +70,9 @@ namespace SlidingWindow
 
 		void loadFrames()
 		{
+			std::cout << "transport_deamon: SendWindow::loadFrames()\n";
 			while (m_used_slots < m_window_size) {
-				MIPTPFrame & frame = *m_frame_container[m_used_slots];
+				MIPTPFrame & frame = *(m_frame_container[m_used_slots]);				
 				std::size_t ret;
 				frame.setMsgSize(MIPTPFrame::FRAME_MAX_MSG_SIZE);
 				try {
@@ -83,9 +90,13 @@ namespace SlidingWindow
 			}
 		}
 
+		bool isEmpty()
+		{
+			return m_used_slots == 0;
+		}
 	private:
-		const int m_seq_size = N * 2;
-		const int m_window_size = N;
+		int m_seq_size = N * 2;
+		int m_window_size = N;
 		int m_used_slots = 0;
 		int m_seq_base = 0;
 		std::array<std::unique_ptr<MIPTPFrame>, N> m_frame_container;
@@ -155,6 +166,7 @@ namespace SlidingWindow
 
 		void receiveFrame(MIPTPFrame & frame)
 		{
+			std::cout << "transport_deamon: ReceiveWindow::receiveFrame()\n";
 			if (frame.getSequenceNumber() == m_seq_num) {
 				//if this then frame is correct frame
 				m_seq_num = (m_seq_num + 1) % m_seq_size;
@@ -166,15 +178,6 @@ namespace SlidingWindow
 			}
 		}
 
-	private:
-		const int m_seq_size = N * 2;
-		int m_seq_num = 0;
-		std::queue<std::pair<MIPAddress, MIPTPFrame>> & m_out_queue;
-		std::vector<char> & m_msg_buffer;
-		const MIPAddress m_dest_mip;
-		const Port m_source_port;
-		const Port m_dest_port;
-
 		/*
 		Send current ack.
 		Parameters:
@@ -183,6 +186,7 @@ namespace SlidingWindow
 		*/
 		void queueAck()
 		{
+			std::cout << "transport_deamon: ReceiveWindow::queueAck()\n";
 			static MIPTPFrame frame;
 			frame.setType(MIPTPFrame::sack);
 			frame.setSource(m_source_port);
@@ -191,6 +195,15 @@ namespace SlidingWindow
 			frame.setMsgSize(0);
 			m_out_queue.emplace(m_dest_mip, frame);
 		}
+
+	private:
+		const int m_seq_size = N * 2;
+		int m_seq_num = 0;
+		std::queue<std::pair<MIPAddress, MIPTPFrame>> & m_out_queue;
+		std::vector<char> & m_msg_buffer;
+		const MIPAddress m_dest_mip;
+		const Port m_source_port;
+		const Port m_dest_port;
 	};
 }
 
@@ -240,6 +253,14 @@ public:
 		void
 	*/
 	void handleSock();
+
+	/*
+	Handle timer evemts.
+	Parameters:
+	Return:
+		void
+	*/
+	void handleTimer();
 
 	/*
 	Get server port.
