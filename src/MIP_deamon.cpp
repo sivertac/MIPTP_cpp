@@ -250,6 +250,8 @@ void receiveLookupSock()
 			frame.setEthSource(eth_source);
 			frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
 			pair.sock->sendMipFrame(frame);
+
+			std::cout << "MIP_deamon: sending transport frame to mip: " << (int)frame.getMipDest() << "\n";
 		}
 		lookup_queue.pop();
 	}
@@ -360,7 +362,7 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 		//send:
 		//	mip
 
-		std::cout << "MIP_deamon received tranport frame from mip: "<< (int)mip_frame.getMipSource() << "\n";
+		std::cout << "MIP_deamon: received transport frame from mip: "<< (int)mip_frame.getMipSource() << "\n";
 
 		if (std::find_if(raw_sock_vec.begin(), raw_sock_vec.end(), [&](RawSock::MIPRawSock & s) { return s.getMip() == dest_mip; }) == raw_sock_vec.end()) {
 			int ttl = mip_frame.getMipTTL();
@@ -428,6 +430,7 @@ Signal function.
 */
 void sigintHandler(int signum)
 {
+	epoll.closeResources();
 }
 
 /*
@@ -545,7 +548,6 @@ int main(int argc, char** argv)
 		catch (LinuxException::InterruptedException & e) {
 			//if this then interrupted
 			std::cout << "MIP_deamon: epoll interrupted\n";
-			epoll.closeResources();
 		}
 	}
 

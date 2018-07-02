@@ -112,6 +112,7 @@
     <ClInclude Include="..\..\include\AddressTypes.hpp" />
     <ClInclude Include="..\..\include\Application.hpp" />
     <ClInclude Include="..\..\include\CircleBuffer.hpp" />
+    <ClInclude Include="..\..\include\ClientHandler.hpp" />
     <ClInclude Include="..\..\include\CrossForkExec.hpp" />
     <ClInclude Include="..\..\include\CrossIPC.hpp" />
     <ClInclude Include="..\..\include\DistanceVectorTable.hpp" />
@@ -126,6 +127,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\AddressTypes.cpp" />
     <ClCompile Include="..\..\src\Application.cpp" />
+    <ClCompile Include="..\..\src\ClientHandler.cpp" />
     <ClCompile Include="..\..\src\CrossForkExec.cpp" />
     <ClCompile Include="..\..\src\CrossIPC.cpp" />
     <ClCompile Include="..\..\src\DistanceVectorTable.cpp" />

@@ -41,6 +41,7 @@ AnonymousSocket lookup_sock;
 std::vector<MIPAddress> neighbour_mip_vec;
 DistanceVectorTable distance_vector_table;
 //main thread is receive thread
+std::thread::id main_thread_id;
 std::thread update_thread;
 std::thread lookup_thread;
 std::mutex update_mutex;
@@ -300,7 +301,9 @@ Signal function.
 */
 void sigintHandler(int signum)
 {
-	//empty
+	if (std::this_thread::get_id() == main_thread_id) {
+		epoll.closeResources();
+	}
 }
 
 /*
@@ -315,6 +318,7 @@ int main(int argc, char** argv)
 	}
 	
 	//signal
+	main_thread_id = std::this_thread::get_id();
 	struct sigaction sa;
 	sa.sa_handler = &sigintHandler;
 	if (sigaction(SIGINT, &sa, NULL) == -1) {
@@ -350,7 +354,6 @@ int main(int argc, char** argv)
 		catch (LinuxException::InterruptedException & e) {
 			//if this then interrupted
 			std::cout << "routing_deamon: epoll interrupted\n";
-			epoll.closeResources();
 		}
 	}
 

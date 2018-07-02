@@ -20,8 +20,8 @@
 #include "../include/CrossIPC.hpp"
 #include "../include/CrossForkExec.hpp"
 #include "../include/EventPoll.hpp"
-#include "../include/Application.hpp"
 #include "../include/TransportInterface.hpp"
+#include "../include/ClientHandler.hpp"
 
 /*
 Globals
@@ -31,9 +31,7 @@ EventPoll epoll;
 AnonymousSocketPacket transport_sock;
 NamedSocket application_sock;
 int application_timeout;
-std::vector<std::unique_ptr<ApplicationServer>> server_vector;
-std::vector<std::unique_ptr<ApplicationClient>> client_vector;
-std::vector<AnonymousSocket> pending_request_vector;
+std::vector<std::unique_ptr<ClientHandler>> client_vector;
 std::queue<std::pair<MIPAddress, MIPTPFrame>> frame_out_queue;
 
 /*
@@ -65,22 +63,15 @@ Parameters:
 Return:
 	true if free, flase if used
 Global:
-	server_vector
 	client_vector
 */
 bool isPortFree(Port port)
 {
 	if (std::find_if(
-		server_vector.begin(),
-		server_vector.end(),
-		[&](std::unique_ptr<ApplicationServer> & ptr) { return ptr->getServerPort() == port; }) != server_vector.end()
-	) {
-		return false;
-	}
-	if (std::find_if(
 		client_vector.begin(),
 		client_vector.end(),
-		[&](std::unique_ptr<ApplicationClient> & ptr) { return ptr->getClientPort() == port; }) != client_vector.end()
+		[&](std::unique_ptr<ClientHandler> & ptr) { return ptr->getSourcePort() == port; })
+		!= client_vector.end()
 	) {
 		return false;
 	}
@@ -93,8 +84,7 @@ Parameters:
 Return:
 	port
 Global:
-	server_vector
-	client_vector
+	isPortFree()
 */
 Port getFreePort()
 {
@@ -119,7 +109,6 @@ Return:
 Global:
 	transport_sock
 	frame_out_queue
-
 */
 void sendTransportSock()
 {
@@ -171,32 +160,22 @@ void receiveTransportSock()
 		transport_sock.recviovec(iov);
 		//resize frame to msg_size
 		frame.setSize(msg_size);
-		//find Application to pass frame to
+		//find ClientHandler to pass frame to
 		Port frame_dest_port = frame.getDest();
-		std::vector<std::unique_ptr<ApplicationServer>>::iterator server_it;
-		std::vector<std::unique_ptr<ApplicationClient>>::iterator client_it;
-		if (server_it = std::find_if(
-			server_vector.begin(),
-			server_vector.end(),
-			[&](std::unique_ptr<ApplicationServer> & ptr) {return frame_dest_port == ptr->getServerPort(); }),
-			server_it != server_vector.end())
-		{
-			//if this then frame is to server_it
-			(*server_it)->receiveFrame(frame, source);
-			if ((*server_it)->getStage() == ApplicationServer::stage_failure) {
-				server_vector.erase(server_it);
-			}
-		}
-		else if (client_it = std::find_if(
+		std::vector<std::unique_ptr<ClientHandler>>::iterator client_it;
+		if (client_it = std::find_if(
 			client_vector.begin(),
 			client_vector.end(),
-			[&](std::unique_ptr<ApplicationClient> & ptr) {return frame_dest_port == ptr->getClientPort(); }),
+			[&](std::unique_ptr<ClientHandler> & ptr) {return frame_dest_port == ptr->getSourcePort(); }),
 			client_it != client_vector.end())
 		{
 			//if this then frame is to client_it
-			(*client_it)->receiveFrame(frame, source);
-			if ((*client_it)->getStage() == ApplicationClient::stage_failure) {
+			(*client_it)->receiveFrame(source, frame);
+			if ((*client_it)->getStage() == ClientHandler::stage_failure) {
 				client_vector.erase(client_it);
+
+				std::cout << "transport_deamon: ClientHandler::stage_failure\n";
+			
 			}
 		}
 		else {
@@ -205,6 +184,7 @@ void receiveTransportSock()
 	}
 	catch (LinuxException::WouldBlockException & e) {
 		//if wouldblock then do nothing
+		return;
 	}
 }
 
@@ -216,140 +196,57 @@ Return:
 Global:
 	epoll
 	application_sock
-	pending_request_vector
+	client_vector
 */
 void receiveApplicationSock()
 {
 	AnonymousSocket sock = application_sock.acceptConnection();
+	sock.enableNonBlock();
+	TimerWrapper timer;
 	epoll.add(sock.getFd(), EPOLLET | EPOLLIN);
-	pending_request_vector.push_back(sock);
+	epoll.addFriend(timer);
+	client_vector.emplace_back(new ClientHandler(sock, timer, application_timeout, frame_out_queue, isPortFree, getFreePort));
 }
 
 /*
-Handle ApplicationServer sock.
-Parameters:
-	server_it		ref to iterator
-Return:
-	void
-Global:
-	server_vector
-	frame_out_vec
-*/
-void handleApplicationServerSock(std::vector<std::unique_ptr<ApplicationServer>>::iterator & server_it)
-{
-	(*server_it)->handleSock();
-	if ((*server_it)->getStage() == ApplicationServer::stage_failure) {
-		server_vector.erase(server_it);
-		
-		std::cout << "transport_deamon: ApplicationServer::stage_failure\n";
-	}
-}
-
-/*
-Handle ApplicationClient sock.
+Handle ClientHandler sock.
 Parameters:
 	client_it		ref to iterator
 Return:
 	void
 Global:
 	client_Vector
-	frame_out_vec
-*/
-void handleApplicationClientSock(std::vector<std::unique_ptr<ApplicationClient>>::iterator & client_it)
-{
-	(*client_it)->handleSock();
-	if ((*client_it)->getStage() == ApplicationClient::stage_failure) {
-		client_vector.erase(client_it);
-
-		std::cout << "transport_deamon: ApplicationClient::stage_failure\n";
-	}
-}
-
-/*
-Handle ApplicationServer timer.
-Parameters:
-	server_it		ref to iterator
-Return:
-	void
-Global:
-	server_vector
-	frame_out_vec
-*/
-void handleApplicationServerTimer(std::vector<std::unique_ptr<ApplicationServer>>::iterator & server_it)
-{
-	(*server_it)->handleTimer();
-	if ((*server_it)->getStage() == ApplicationServer::stage_failure) {
-		server_vector.erase(server_it);
-
-		std::cout << "transport_deamon: ApplicationServer::stage_failure\n";
-	}
-	else {
-		(*server_it)->getTimer().setExpirationFromNow(application_timeout);
-	}
-}
-
-/*
-Handle ApplicationClient timer.
-Parameters:
-	client_it		ref to iterator
-Return:
-	void
-Global:
-	client_Vector
-	frame_out_vec
-*/
-void handleApplicationClientTimer(std::vector<std::unique_ptr<ApplicationClient>>::iterator & client_it)
-{
-	(*client_it)->handleTimer();
-	if ((*client_it)->getStage() == ApplicationClient::stage_failure) {
-		client_vector.erase(client_it);
-
-		std::cout << "transport_deamon: ApplicationClient::stage_failure\n";
-	}
-	else {
-		(*client_it)->getTimer().setExpirationFromNow(application_timeout);
-	}
-}
-
-/*
-Handle pending application request.
-Parameters:
-	sock		ref to requesting sock
-Return:
-	void
-Global:
-	epoll
-	pending_request_vector
-	server_vector
-	client_vector
 	frame_out_queue
 */
-void handlePendingRequest(std::vector<AnonymousSocket>::iterator & pending_it)
+void handleClientHandlerSock(std::vector<std::unique_ptr<ClientHandler>>::iterator & client_it)
 {
-	//<request type : uint8_t>
-	AnonymousSocket & sock = *pending_it;
-	std::uint8_t request;
-	pending_it->readGeneric<std::uint8_t>(request);
-	if (request ==  TransportInterface::ApplicationRequest::request_listen) {
-		TimerWrapper timer;
-		epoll.addFriend<TimerWrapper>(timer);
-		timer.setExpirationFromNow(100);
-		server_vector.emplace_back(new ApplicationServer(sock, timer, frame_out_queue, isPortFree, getFreePort));
+	(*client_it)->handleSock();
+	if ((*client_it)->getStage() == ClientHandler::stage_failure) {
+		client_vector.erase(client_it);
+
+		std::cout << "transport_deamon: ClientHandler::stage_failure\n";
+
 	}
-	else if (request == TransportInterface::ApplicationRequest::request_connect) {
-		TimerWrapper timer;
-		epoll.addFriend<TimerWrapper>(timer);
-		timer.setExpirationFromNow(100);
-		client_vector.emplace_back(new ApplicationClient(sock, timer, frame_out_queue, isPortFree, getFreePort));
+}
+
+/*
+Handle ClientHandler timer.
+Parameters:
+	client_it		ref to iterator
+Return:
+	void
+Global:
+	client_Vector
+	frame_out_queue
+*/
+void handleClientHandlerTimer(std::vector<std::unique_ptr<ClientHandler>>::iterator & client_it)
+{
+	(*client_it)->handleTimer();
+	if ((*client_it)->getStage() == ClientHandler::stage_failure) {
+		client_vector.erase(client_it);
+
+		std::cout << "transport_deamon: ClientHandler::stage_failure\n";
 	}
-	else {
-		std::cout << "transport_deamon: Invalid application request\n";
-		bool reply = false;
-		epoll.removeFriend<AnonymousSocket>(sock);
-		sock.writeGeneric<bool>(reply);
-		sock.closeResources();
-	}
-	pending_request_vector.erase(pending_it);
 }
 
 /*
@@ -357,7 +254,7 @@ Signal function.
 */
 void sigintHandler(int signum)
 {
-	
+	epoll.closeResources();
 }
 
 const char* help_string = "./transport_deamon <named socket name> <timeout> [mip addresses]";
@@ -413,8 +310,7 @@ int main(int argc, char** argv)
 			auto & event_vec = epoll.wait(20);
 			for (auto & ev : event_vec) {
 				std::vector<AnonymousSocket>::iterator pending_it;
-				std::vector<std::unique_ptr<ApplicationServer>>::iterator server_it;
-				std::vector<std::unique_ptr<ApplicationClient>>::iterator client_it;
+				std::vector<std::unique_ptr<ClientHandler>>::iterator client_it;
 				int in_fd = ev.data.fd;
 				if (in_fd == transport_sock.getFd()) {
 					std::cout << "transport_deamon: transport_sock\n";
@@ -427,50 +323,23 @@ int main(int argc, char** argv)
 					std::cout << "transport_deamon: application_sock\n";
 					receiveApplicationSock();
 				}
-				else if (pending_it = std::find_if(
-					pending_request_vector.begin(),
-					pending_request_vector.end(),
-					[&](AnonymousSocket & s) { return s.getFd() == in_fd; }),
-					pending_it != pending_request_vector.end()) 
-				{
-					std::cout << "transport_deamon: pending_it\n";
-					handlePendingRequest(pending_it);
-				}
-				else if (server_it = std::find_if(
-					server_vector.begin(),
-					server_vector.end(),
-					[&](std::unique_ptr<ApplicationServer> & ptr) { return ptr->getSock().getFd() == in_fd; }),
-					server_it != server_vector.end())
-				{
-					std::cout << "transport_deamon: server_it sock\n";
-					handleApplicationServerSock(server_it);
-				}
 				else if (client_it = std::find_if(
 					client_vector.begin(),
 					client_vector.end(),
-					[&](std::unique_ptr<ApplicationClient> & ptr) { return ptr->getSock().getFd() == in_fd; }),
+					[&](std::unique_ptr<ClientHandler> & ptr) { return ptr->getSock().getFd() == in_fd; }),
 					client_it != client_vector.end())
 				{
 					std::cout << "transport_deamon: client_it sock\n";
-					handleApplicationClientSock(client_it);
-				}
-				else if (server_it = std::find_if(
-					server_vector.begin(),
-					server_vector.end(),
-					[&](std::unique_ptr<ApplicationServer> & ptr) {return ptr->getTimer().getFd() == in_fd; }),
-					server_it != server_vector.end())
-				{
-					std::cout << "transport_deamon: server_it timer\n";
-					handleApplicationServerTimer(server_it);
+					handleClientHandlerSock(client_it);
 				}
 				else if (client_it = std::find_if(
 					client_vector.begin(),
 					client_vector.end(),
-					[&](std::unique_ptr<ApplicationClient> & ptr) {return ptr->getTimer().getFd() == in_fd; }),
+					[&](std::unique_ptr<ClientHandler> & ptr) {return ptr->getTimer().getFd() == in_fd; }),
 					client_it != client_vector.end())
 				{
 					std::cout << "transport_deamon: client_it timer\n";
-					handleApplicationClientTimer(client_it);
+					handleClientHandlerTimer(client_it);
 				}
 				else {
 					//assert(false);
@@ -482,7 +351,6 @@ int main(int argc, char** argv)
 		catch (LinuxException::InterruptedException & e) {
 			//if this then interrupted
 			std::cout << "transport_deamon: epoll interrupted\n";
-			epoll.closeResources();
 		}
 	}
 

@@ -27,13 +27,15 @@ int main(int argc, char** argv)
 
 	std::size_t msg_size;
 	
-	
 	sock.readGeneric(msg_size);
 	std::cout << "test_server: msg_size " << msg_size << "\n";
 
 	std::vector<char> msg(msg_size);
-
-	std::size_t ret = sock.read(msg.data(), msg_size);
+	
+	std::size_t ret = 0;
+	while (ret < msg_size) {
+		ret += sock.read(msg.data() + ret, msg_size - ret);
+	}
 
 	std::cout << "test_server: ret " << ret << "\n";
 	std::cout << "test_server: " << std::string(msg.data()) << "\n";
