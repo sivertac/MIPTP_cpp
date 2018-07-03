@@ -12,10 +12,64 @@
 //Local
 #include "../include/MIPFrame.hpp"
 #include "../include/MIPTPFrame.hpp"
-#include "../include/Application.hpp"
 #include "../include/AddressTypes.hpp"
 #include "../include/CrossIPC.hpp"
+#include "../include/ClientHandler.hpp"
 
+int m_sequence_base = 10;
+const int m_window_size = 10;
+const int m_sequence_size = m_window_size * 2;
+
+bool seqInsideWindow(int seq)
+{
+	if (seq < m_sequence_base) {
+		if (seq + m_sequence_size < m_sequence_base + m_window_size) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	else {
+		if (seq < m_sequence_base + m_window_size) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+}
+
+int calcMoves(int seq)
+{
+	if (seq < m_sequence_base) {
+		return (seq + m_sequence_size) - m_sequence_base;
+	}
+	else {
+		return seq - m_sequence_base;
+	}
+}
+
+int main(int argc, char** argv)
+{
+	std::cout << std::boolalpha;
+	//for (int i = 0; i < m_sequence_size; ++i) {
+	//	std::cout << i << ": " << seqInsideWindow(i) << "\n";
+	//}
+
+	//std::cout << calcMoves(0) << "\n";
+
+	MIPTPFrame frame;
+
+	frame.setSequenceNumber(12);
+	frame.setMsgSize(0);
+
+	std::cout << frame.getSequenceNumber() << "\n";
+
+	return 0;
+}
+
+/*
 int main(int argc, char** argv)
 {
 	
@@ -38,7 +92,7 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
+*/
 
 /*
 AnonymousSocketPacket sock1;

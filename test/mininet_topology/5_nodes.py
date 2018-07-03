@@ -113,18 +113,18 @@ def Config(net, args):
     
     #Enter commands here 
    
-    #A.cmd('xterm&')
-    #B.cmd('xterm&')
-    #C.cmd('xterm&')
-    #D.cmd('xterm&')
-    #E.cmd('xterm')
-    
-    B.cmd('./transport_deamon B 2000 20 30 40 &')
-    C.cmd('./transport_deamon C 2000 50 60 &')
-    D.cmd('./transport_deamon D 2000 70 80 90 &')
-
     A.cmd('xterm&')
+    B.cmd('xterm&')
+    C.cmd('xterm&')
+    D.cmd('xterm&')
     E.cmd('xterm')
+    
+    #B.cmd('./transport_deamon B 2000 20 30 40 &')
+    #C.cmd('./transport_deamon C 2000 50 60 &')
+    #D.cmd('./transport_deamon D 2000 70 80 90 &')
+	#
+    #A.cmd('xterm&')
+    #E.cmd('xterm')
 
     progress(int(args.t))
     

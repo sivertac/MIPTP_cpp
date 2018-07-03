@@ -114,9 +114,6 @@ void ClientHandler::handleSock()
 			//try to load
 			loadFrames();
 		}
-		else {
-			assert(false);
-		}
 	}
 }
 
@@ -179,6 +176,8 @@ void ClientHandler::handleTimer()
 
 void ClientHandler::receiveFrame(MIPAddress source, MIPTPFrame & in_frame)
 {
+	//std::cout << "transport_deamon: client receive frame\n";
+
 	if (m_stage == stage_listen) {
 		if (in_frame.getType() == MIPTPFrame::request) {
 			//store addresses
@@ -263,7 +262,7 @@ void ClientHandler::receiveFrame(MIPAddress source, MIPTPFrame & in_frame)
 		else if (m_type == type_client) {
 			if (frame_type == MIPTPFrame::sack) {
 				int seq_num = in_frame.getSequenceNumber();
-				if (seqInsideWindow(seq_num)) {
+				if (seqInsideWindow(seq_num) || seq_num == (m_sequence_base + m_window_size) % m_sequence_size) {
 					if (seq_num != m_sequence_base) {
 						moveWindow(calcMoves(seq_num));
 					}
@@ -271,9 +270,7 @@ void ClientHandler::receiveFrame(MIPAddress source, MIPTPFrame & in_frame)
 				}
 			}
 		}
-		else {
-			assert(false);
-		}
+		
 		//check if request_frame
 		if (frame_type == MIPTPFrame::request) {
 			//if request then reply
@@ -284,6 +281,7 @@ void ClientHandler::receiveFrame(MIPAddress source, MIPTPFrame & in_frame)
 			reply_frame.setSequenceNumber(0);
 			reply_frame.setMsgSize(0);
 			m_out_queue.emplace(m_dest_address, reply_frame);
+			m_connected_reply = true;	//if we receive connect then we're connected too (redundancy in case we lose a request)
 		}
 		else if (frame_type == MIPTPFrame::reply) {
 			//if reply then we're still connected
@@ -332,6 +330,8 @@ void ClientHandler::loadFrames()
 				frame.setMsgSize(ret);
 				++m_used_slots;
 
+				std::cout << "transport_deamon: m_used_slots: " << m_used_slots << "\n";
+
 				m_total_data_loaded += frame.getMsgSize();
 			}
 		}
@@ -364,6 +364,8 @@ void ClientHandler::moveWindow(int moves)
 			m_used_slots = 0;
 		}
 		m_sequence_base = (m_sequence_base + moves) % m_sequence_size;
+
+		std::cout << "transport_deamon: m_used_slots: " << m_used_slots << "\n";
 	}
 }
 
@@ -406,6 +408,8 @@ void ClientHandler::queueAck()
 	frame.setSequenceNumber(m_current_ack);
 	frame.setMsgSize(0);
 	m_out_queue.emplace(m_dest_address, frame);
+
+	std::cout << "transport_deamon: queued ack seq num: " << m_current_ack << "\n";
 }
 
 void ClientHandler::sendToSock()

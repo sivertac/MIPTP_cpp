@@ -56,6 +56,7 @@ int main(int argc, char** argv)
 	std::size_t ret = 0;
 	while (ret < buffer_size) {
 		ret += sock.read(buffer.data() + ret, buffer_size - ret);
+		std::cout << ret << "\n";
 	}
 	total_bytes_received += ret;
 
@@ -66,6 +67,7 @@ int main(int argc, char** argv)
 	ret = 0;
 	while (ret < buffer_size) {
 		ret += sock.read(buffer.data() + ret, buffer_size - ret);
+		std::cout << ret << "\n";
 	}
 	total_bytes_received += ret;
 

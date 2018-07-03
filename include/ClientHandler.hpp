@@ -143,7 +143,7 @@ private:
 
 	//sliding window
 	static const int m_window_size = 10;
-	static const int m_sequence_size = m_window_size * 2;
+	static const int m_sequence_size = m_window_size * 4;
 	int m_used_slots = 0;
 	int m_sequence_base = 0;
 	int m_current_ack = 0;

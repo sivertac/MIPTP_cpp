@@ -75,7 +75,9 @@ bool isPortFree(Port port)
 	) {
 		return false;
 	}
-	return true;
+	else {
+		return true;
+	}
 }
 
 /*
