@@ -4,7 +4,8 @@
 CC = g++
 FLAGS = -Wall -Werror -std=c++11 -DLINUX -pthread
 
-BINARIES = main MIP_deamon routing_deamon transport_deamon test_client test_server
+BINARIES =	main MIP_deamon routing_deamon transport_deamon \
+			test_client test_server file_receiver file_sender
 
 OBJECTS =	MIPFrame.o CrossForkExec.o CrossIPC.o \
 			RawSock.o AddressTypes.o LinuxException.o \
@@ -33,6 +34,12 @@ test_client: src/test_client.cpp $(OBJECTS)
 
 test_server: src/test_server.cpp $(OBJECTS)
 	$(CC) $(FLAGS) -o test_server src/test_server.cpp $(OBJECTS)
+
+file_receiver: src/file_receiver.cpp $(OBJECTS)
+	$(CC) $(FLAGS) -o file_receiver src/file_receiver.cpp $(OBJECTS)
+
+file_sender: src/file_sender.cpp $(OBJECTS)
+	$(CC) $(FLAGS) -o file_sender src/file_sender.cpp $(OBJECTS)
 
 #objects
 MIPFrame.o: src/MIPFrame.cpp include/MIPFrame.hpp

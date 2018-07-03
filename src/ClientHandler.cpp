@@ -139,15 +139,6 @@ void ClientHandler::handleTimer()
 			//try to send to sock
 			sendToSock();
 
-			//check if we're still connected
-			if (!m_received_message_since_timeout) {
-				std::cout << "transport_deamon: timeout!\n";
-				m_stage = stage_failure;
-			}
-			else {
-				m_received_message_since_timeout = false;
-			}
-
 			std::cout	<< "transport_deamon: m_current_ack: " << (int)m_current_ack 
 						<< " m_total_data_received: " << m_total_data_received
 						<< "\n";
@@ -165,6 +156,22 @@ void ClientHandler::handleTimer()
 		}
 		else {
 			assert(false);
+		}
+		//check if connection is maintained
+		if (!m_connected_reply) {
+			//if this then no reply
+			m_stage = stage_failure;
+		}
+		else {
+			static MIPTPFrame request_frame;
+			request_frame.setType(MIPTPFrame::request);
+			request_frame.setDest(m_dest_port);
+			request_frame.setSource(m_source_port);
+			request_frame.setSequenceNumber(0);
+			request_frame.setMsgSize(0);
+			m_out_queue.emplace(m_dest_address, request_frame);
+			//reset var
+			m_connected_reply = false;
 		}
 	}
 	m_timer.setExpirationFromNow(m_timeout);
@@ -238,8 +245,9 @@ void ClientHandler::receiveFrame(MIPAddress source, MIPTPFrame & in_frame)
 		}
 	}
 	else if (m_stage == stage_connected) {
+		int frame_type = in_frame.getType();
 		if (m_type == type_server) {
-			if (in_frame.getType() == MIPTPFrame::data) {
+			if (frame_type == MIPTPFrame::data) {
 				if (in_frame.getSequenceNumber() == m_current_ack) {
 					m_current_ack = (m_current_ack + 1) % m_sequence_size;
 					m_msg_buffer.insert(m_msg_buffer.end(), in_frame.getMsg(), in_frame.getMsg() + in_frame.getMsgSize());
@@ -250,11 +258,10 @@ void ClientHandler::receiveFrame(MIPAddress source, MIPTPFrame & in_frame)
 				else {
 					queueAck();
 				}
-				m_received_message_since_timeout = true;
 			}
 		}
 		else if (m_type == type_client) {
-			if (in_frame.getType() == MIPTPFrame::sack) {
+			if (frame_type == MIPTPFrame::sack) {
 				int seq_num = in_frame.getSequenceNumber();
 				if (seqInsideWindow(seq_num)) {
 					if (seq_num != m_sequence_base) {
@@ -266,6 +273,21 @@ void ClientHandler::receiveFrame(MIPAddress source, MIPTPFrame & in_frame)
 		}
 		else {
 			assert(false);
+		}
+		//check if request_frame
+		if (frame_type == MIPTPFrame::request) {
+			//if request then reply
+			static MIPTPFrame reply_frame;
+			reply_frame.setType(MIPTPFrame::reply);
+			reply_frame.setDest(m_dest_port);
+			reply_frame.setSource(m_source_port);
+			reply_frame.setSequenceNumber(0);
+			reply_frame.setMsgSize(0);
+			m_out_queue.emplace(m_dest_address, reply_frame);
+		}
+		else if (frame_type == MIPTPFrame::reply) {
+			//if reply then we're still connected
+			m_connected_reply = true;
 		}
 	}
 }

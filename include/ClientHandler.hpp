@@ -153,7 +153,7 @@ private:
 	std::size_t m_total_data_loaded = 0;
 	std::size_t m_total_data_received = 0;
 
-	bool m_received_message_since_timeout = true;
+	bool m_connected_reply = true;
 
 	/*
 	Client: Load frames in to window.
