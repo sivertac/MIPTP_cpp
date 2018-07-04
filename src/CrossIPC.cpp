@@ -224,6 +224,15 @@ void AnonymousSocket::writeString(const std::string & str)
 	write(str.c_str(), str.length());
 }
 
+std::size_t AnonymousSocket::readUntil(char * buf, std::size_t size)
+{
+	std::size_t ret = 0;
+	while (ret < size) {
+		ret += read(buf + ret, size - ret);
+	}
+	return ret;
+}
+
 std::string AnonymousSocket::readString()
 {
 	const std::size_t buf_size = 1024;

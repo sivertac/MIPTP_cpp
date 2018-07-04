@@ -50,7 +50,7 @@ std::condition_variable update_blocker;
 std::condition_variable lookup_blocker;
 std::queue<std::pair<bool, MIPAddress>> update_queue;	//if first is true exclude, if not send to all
 std::queue<MIPAddress> lookup_queue;					//contains request mip
-bool running = true;
+volatile bool running = true;
 
 /*
 Shutdown threads (must only be called from main thread).

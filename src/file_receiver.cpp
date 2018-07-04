@@ -32,6 +32,7 @@ int main(int argc, char** argv)
 	<name size: std::size_t> <name> <file size: std::size_t> <file>
 	*/
 
+	//listen
 	AnonymousSocket sock;
 	try {
 		sock = TransportInterface::requestListen(argv[1], listen_port);
@@ -45,39 +46,43 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
-
 	std::size_t total_bytes_received = 0;
-
 	std::size_t buffer_size;
 	std::vector<char> buffer;
 
-	total_bytes_received += sock.readGeneric(buffer_size);
-	buffer.resize(buffer_size);
-	std::size_t ret = 0;
-	while (ret < buffer_size) {
-		ret += sock.read(buffer.data() + ret, buffer_size - ret);
-		std::cout << ret << "\n";
-	}
-	total_bytes_received += ret;
-
+	//receive filename
+	total_bytes_received += sock.readGenericUntil(buffer_size);
+	buffer.resize(buffer_size);	
+	total_bytes_received += sock.readUntil(buffer.data(), buffer_size);
 	std::string filename(buffer.begin(), buffer.end());
 	
-	total_bytes_received += sock.readGeneric(buffer_size);
+	//receive file
+	total_bytes_received += sock.readGenericUntil(buffer_size);
 	buffer.resize(buffer_size);
-	ret = 0;
-	while (ret < buffer_size) {
-		ret += sock.read(buffer.data() + ret, buffer_size - ret);
-		std::cout << ret << "\n";
-	}
-	total_bytes_received += ret;
+	total_bytes_received += sock.readUntil(buffer.data(), buffer_size);
 
 	sock.closeResources();
 
 	std::cout << "file_receiver: transmission done\n";
 
 	std::cout << "file_receiver: filename: " << filename << "\n";
-
 	std::cout << "file_receiver: total_bytes_received: " << total_bytes_received << "\n";
+
+	//write file
+	if (filepath.find('/') == filepath.npos) {
+		filepath = filename;
+	}
+	else {
+		filepath = filepath.substr(0, filepath.find_last_of('/') + 1);
+		filepath += filename;
+	}
+	std::cout << "file_receiver: filepath: " << filepath << "\n";
+	std::fstream file_stream(filepath, file_stream.binary | file_stream.out | file_stream.trunc);
+	if (!file_stream.is_open()) {
+		std::cerr << "file_receiver: failed to open/create: " << filepath << "\n";
+		return EXIT_FAILURE;
+	}
+	file_stream.write(buffer.data(), buffer.size());
 
 	std::cout << "file_receiver: terminating\n";
 

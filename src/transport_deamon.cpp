@@ -149,43 +149,45 @@ void receiveTransportSock()
 {
 	std::cout << "transport_deamon: Receive transport_sock" << "\n";
 	try {
-		static MIPTPFrame frame;
-		if (frame.getSize() != MIPTPFrame::FRAME_MAX_SIZE) {
-			frame.setSize(MIPTPFrame::FRAME_MAX_SIZE);
-		}
-		MIPAddress source;
-		std::size_t msg_size;
-		AnonymousSocketPacket::IovecWrapper<3> iov;
-		iov.setIndex(0, source);
-		iov.setIndex(1, msg_size);
-		iov.setIndex(2, frame.getData(), frame.getSize());
-		transport_sock.recviovec(iov);
-		//resize frame to msg_size
-		frame.setSize(msg_size);
-		//find ClientHandler to pass frame to
-		Port frame_dest_port = frame.getDest();
-		std::vector<std::unique_ptr<ClientHandler>>::iterator client_it;
-		if (client_it = std::find_if(
-			client_vector.begin(),
-			client_vector.end(),
-			[&](std::unique_ptr<ClientHandler> & ptr) {return frame_dest_port == ptr->getSourcePort(); }),
-			client_it != client_vector.end())
-		{
-			//if this then frame is to client_it
-			(*client_it)->receiveFrame(source, frame);
-			if ((*client_it)->getStage() == ClientHandler::stage_failure) {
-				client_vector.erase(client_it);
-
-				std::cout << "transport_deamon: ClientHandler::stage_failure\n";
-			
+		while (true) {
+			static MIPTPFrame frame;
+			if (frame.getSize() != MIPTPFrame::FRAME_MAX_SIZE) {
+				frame.setSize(MIPTPFrame::FRAME_MAX_SIZE);
 			}
-		}
-		else {
-			std::cout << "transport_deamon: nothing at port: " << (int)frame_dest_port << "\n";
+			MIPAddress source;
+			std::size_t msg_size;
+			AnonymousSocketPacket::IovecWrapper<3> iov;
+			iov.setIndex(0, source);
+			iov.setIndex(1, msg_size);
+			iov.setIndex(2, frame.getData(), frame.getSize());
+			transport_sock.recviovec(iov);
+			//resize frame to msg_size
+			frame.setSize(msg_size);
+			//find ClientHandler to pass frame to
+			Port frame_dest_port = frame.getDest();
+			std::vector<std::unique_ptr<ClientHandler>>::iterator client_it;
+			if (client_it = std::find_if(
+				client_vector.begin(),
+				client_vector.end(),
+				[&](std::unique_ptr<ClientHandler> & ptr) {return frame_dest_port == ptr->getSourcePort(); }),
+				client_it != client_vector.end())
+			{
+				//if this then frame is to client_it
+				(*client_it)->receiveFrame(source, frame);
+				if ((*client_it)->getStage() == ClientHandler::stage_failure) {
+					client_vector.erase(client_it);
+
+					std::cout << "transport_deamon: ClientHandler::stage_failure\n";
+
+				}
+			}
+			else {
+				std::cout << "transport_deamon: nothing at port: " << (int)frame_dest_port << "\n";
+			}
 		}
 	}
 	catch (LinuxException::WouldBlockException & e) {
-		//if wouldblock then do nothing
+		//if wouldblock then exit loop
 		return;
 	}
 }
@@ -318,8 +320,6 @@ int main(int argc, char** argv)
 					std::cout << "transport_deamon: transport_sock\n";
 					//try to receive
 					receiveTransportSock();
-					//try to send
-					sendTransportSock();
 				}
 				else if (in_fd == application_sock.getFd()) {
 					std::cout << "transport_deamon: application_sock\n";

@@ -116,7 +116,31 @@ public:
 	{
 		return read(reinterpret_cast<char*>(&data), sizeof(T));
 	}
-		
+	
+	/*
+	Read until.
+	Will block until all bytes requested are received (or throw BrokenPipeException)).
+	Parameters:
+		 buf		buffer to read to
+		 size		read request size (<= size of buf)
+	Return:
+		size_t		number of bytes read
+	*/
+	std::size_t readUntil(char* buf, std::size_t size);
+
+	/*
+	Generic read until.
+	Parameters:
+		data		red to data
+	Return:
+		size_t		number of bytes read
+	*/
+	template <typename T>
+	std::size_t readGenericUntil(T & data)
+	{
+		return readUntil(reinterpret_cast<char*>(&data), sizeof(data));
+	}
+
 	/*
 	Read string from socket.
 	Parameters:

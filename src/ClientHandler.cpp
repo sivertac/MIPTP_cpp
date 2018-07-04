@@ -11,7 +11,15 @@ ClientHandler::ClientHandler(AnonymousSocket & sock, TimerWrapper & timer, int t
 	m_timeout(timeout),
 	m_out_queue(out_queue),
 	m_is_port_free(is_port_free),
-	m_get_free_port(get_free_port)
+	m_get_free_port(get_free_port),
+	m_dest_address(0),
+	m_dest_port(0),
+	m_source_port(0),
+	m_used_slots(0),
+	m_sequence_base(0),
+	m_current_ack(0),
+	m_total_data_loaded(0),
+	m_total_data_received(0)
 {
 	assert(m_sock.isNonBlock());
 }
@@ -78,6 +86,9 @@ void ClientHandler::handleSock()
 					frame.setMsgSize(0);
 					//send
 					m_out_queue.emplace(m_dest_address, frame);
+
+					std::cout << "transport_deamon: client sending request, type: " << frame.getType() << "\n";
+
 					//set timeout
 					m_timer.setExpirationFromNow(m_timeout);
 					//set stage
@@ -176,10 +187,12 @@ void ClientHandler::handleTimer()
 
 void ClientHandler::receiveFrame(MIPAddress source, MIPTPFrame & in_frame)
 {
-	//std::cout << "transport_deamon: client receive frame\n";
-
 	if (m_stage == stage_listen) {
+		std::cout << "transport_deamon: server got frame, type: " << in_frame.getType() << "\n";
+
 		if (in_frame.getType() == MIPTPFrame::request) {
+			std::cout << "transport_deamon: server got request frame\n";
+			
 			//store addresses
 			m_dest_address = source;
 			m_dest_port = in_frame.getSource();
@@ -192,6 +205,9 @@ void ClientHandler::receiveFrame(MIPAddress source, MIPTPFrame & in_frame)
 			out_frame.setMsgSize(0);
 			//send
 			m_out_queue.emplace(m_dest_address, out_frame);
+
+			
+
 			try {
 				//reply sock
 				std::uint8_t reply = TransportInterface::reply_success;

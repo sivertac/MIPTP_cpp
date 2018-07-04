@@ -132,6 +132,8 @@
     <ClCompile Include="..\..\src\CrossIPC.cpp" />
     <ClCompile Include="..\..\src\DistanceVectorTable.cpp" />
     <ClCompile Include="..\..\src\EventPoll.cpp" />
+    <ClCompile Include="..\..\src\file_compare.cpp" />
+    <ClCompile Include="..\..\src\file_generate.cpp" />
     <ClCompile Include="..\..\src\file_receiver.cpp" />
     <ClCompile Include="..\..\src\file_sender.cpp" />
     <ClCompile Include="..\..\src\LinuxException.cpp" />

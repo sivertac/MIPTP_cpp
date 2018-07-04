@@ -137,21 +137,21 @@ private:
 	std::function<bool(Port)> m_is_port_free;
 	std::function<Port()> m_get_free_port;
 
-	MIPAddress m_dest_address = 0;
-	Port m_dest_port = 0;
-	Port m_source_port = 0;
+	MIPAddress m_dest_address;
+	Port m_dest_port;
+	Port m_source_port;
 
 	//sliding window
 	static const int m_window_size = 10;
 	static const int m_sequence_size = m_window_size * 4;
-	int m_used_slots = 0;
-	int m_sequence_base = 0;
-	int m_current_ack = 0;
+	int m_used_slots;
+	int m_sequence_base;
+	int m_current_ack;
 	std::array<std::unique_ptr<MIPTPFrame>, m_window_size> m_frame_window;
 	std::vector<char> m_msg_buffer;
 
-	std::size_t m_total_data_loaded = 0;
-	std::size_t m_total_data_received = 0;
+	std::size_t m_total_data_loaded;
+	std::size_t m_total_data_received;
 
 	bool m_connected_reply = true;
 
