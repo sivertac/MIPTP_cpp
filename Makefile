@@ -5,7 +5,7 @@ CC = g++
 FLAGS = -Wall -Werror -std=c++11 -DLINUX -pthread
 
 BINARIES =	main MIP_deamon routing_deamon transport_deamon \
-			test_client test_server file_receiver file_sender \
+			file_receiver file_sender \
 			file_compare file_generate
 
 OBJECTS =	MIPFrame.o CrossForkExec.o CrossIPC.o \
@@ -29,12 +29,6 @@ routing_deamon: src/routing_deamon.cpp $(OBJECTS)
 
 transport_deamon: src/transport_deamon.cpp $(OBJECTS)
 	$(CC) $(FLAGS) -o transport_deamon src/transport_deamon.cpp $(OBJECTS)
-
-test_client: src/test_client.cpp $(OBJECTS)
-	$(CC) $(FLAGS) -o test_client src/test_client.cpp $(OBJECTS)
-
-test_server: src/test_server.cpp $(OBJECTS)
-	$(CC) $(FLAGS) -o test_server src/test_server.cpp $(OBJECTS)
 
 file_receiver: src/file_receiver.cpp $(OBJECTS)
 	$(CC) $(FLAGS) -o file_receiver src/file_receiver.cpp $(OBJECTS)

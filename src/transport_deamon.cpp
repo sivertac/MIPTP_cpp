@@ -35,28 +35,6 @@ std::vector<std::unique_ptr<ClientHandler>> client_vector;
 std::queue<std::pair<MIPAddress, MIPTPFrame>> frame_out_queue;
 
 /*
-Application request:
-	<request type : uint8_t> <dest mip : MIPAddress> <port : Port>
-	request type :
-		1 : listen
-		2 : connect
-	only 14 lower bits are part of port.
-
-Application request reply:
-	<reply : bool>
-	reply :
-		true	: granted
-		false	: not granted
-
-transport protocol:
-	ApplicationServer is listening on Port p1.
-	ApplicationClient sends connect request from Port p2 to ApplicationServer on p1.
-	ApplicationServer replies accept if connection is accepted or not.
-
-2 way communication is possible.
-*/
-
-/*
 Check if port is free.
 Parameters:
 	port		port to check
