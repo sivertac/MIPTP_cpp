@@ -39,11 +39,14 @@ To implement the necessary network layers ontop of the linux raw socket interfac
 The original C project was from a networking course I took, I've made some changes to the design requirements and added some features.
 
 The system is divided in 3 parts, which all have their own process, and they can partially run independently. They communicate with IPC.
+
 * __MIP_deamon__ (handles link layer).
 	* In and out going ethernet frames.
 	* ARP.
+
 * __routing_deamon__ (handles network layer).
 	* DVR.
+
 * __transport_deamon__ (handles transport layer).
 	* Provide interface for Applications to connect.
 	* Handle handshake to connect two clients.
@@ -52,33 +55,47 @@ The system is divided in 3 parts, which all have their own process, and they can
 
 ## Implementation details
 As an exercise, I made the 3 deamons handle concurrent sockets in 3 different ways, 
+
 * __MIP_deamon__ uses a epoll on the main thread with blocking sockets to handle all sockets.
+
 * __routing_deamon__ uses a epoll on the main thread to handle incomming data and place them in queues, and then worker threads to pop from the queues and send data.
+
 * __transport_deamon__ uses a epoll on the main thread with nonblocking sockets.
 
 Todo: write discussion about how blocking sockets in this paticular design is bad.
 
 ## How to build
+
 ### Build requirements:
 	gcc 4.8.4 or above
+
 ### Build:
 	make
 
 ## How to run
 ### transport_deamon
-	./transport_deamon <named socket name> <timeout> [mip addresses]
-	transport_deamon will fork-exec MIP_deamon, and MIP_deamon will fork-exec routing_deamon.   
+	./transport_deamon [-d] <socket name> <timeout> [mip addresses]
+	socket name : name of socket that clients use to connect
+	timeout : connection timeout
+	mip addresses : one or more addresses to assign the ethernet interfaces
+
+	transport_deamon will fork-exec MIP_deamon, and MIP_deamon will fork-exec routing_deamon.
+
 ### file_compare
 	./file_compare <file1> <file2>
+
 ### file_generate
 	./file_generate <filename> <size>
+
 ### file_sender
 	./file_sender <transport_deamon sock> <file path> <mip address> <port>
+
 ### file_receiver
 	./file_receiver <transport_deamon sock> <file storage directory> <listen port>
 
 ## Test environment
 To test the system we need to create a test environment 
+
 ### Todo: explain test enviroment
 http://mininet.org/
 

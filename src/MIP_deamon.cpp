@@ -197,6 +197,7 @@ Return:
 Global:
 	transport_sock
 	lookup_queue
+	raw_sock_vec
 */
 void receiveTransportSock()
 {
@@ -214,12 +215,19 @@ void receiveTransportSock()
 	if (frame.getMsgSize() != msg_size) {
 		frame.setMsgSize(msg_size);
 	}
-	frame.setMipTRA(MIPFrame::T);
-	frame.setMipDest(dest);
-	frame.setMipTTL(0xff);
-	frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
-	lookup_queue.emplace(false, frame);
-	lookup_sock.write(reinterpret_cast<char*>(&dest), sizeof(dest));
+
+	//check if dest address is local, if so then send back to transport_deamon
+	if (std::find_if(raw_sock_vec.begin(), raw_sock_vec.end(), [&](RawSock::MIPRawSock & s) { return s.getMip() == dest; }) != raw_sock_vec.end()) {
+		transport_sock.sendiovec(iov);
+	}
+	else {
+		frame.setMipTRA(MIPFrame::T);
+		frame.setMipDest(dest);
+		frame.setMipTTL(0xff);
+		frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
+		lookup_queue.emplace(false, frame);
+		lookup_sock.write(reinterpret_cast<char*>(&dest), sizeof(dest));
+	}
 }
 
 /*
@@ -237,6 +245,7 @@ void receiveLookupSock()
 	if (success) {
 		MIPAddress via;
 		lookup_sock.read(reinterpret_cast<char*>(&via), sizeof(via));
+		//check outgoing sockets
 		auto pair_it = std::find_if(arp_pair_vec.begin(), arp_pair_vec.end(), [&](ARPPair & p) { return p.mip == via; });
 		if (pair_it != arp_pair_vec.end()) {
 			ARPPair pair = (*pair_it);
@@ -250,9 +259,8 @@ void receiveLookupSock()
 			frame.setEthSource(eth_source);
 			frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
 			pair.sock->sendMipFrame(frame);
-
-			std::cout << "MIP_deamon: sending transport frame to mip: " << (int)frame.getMipDest() << "\n";
 		}
+		//check if via is target is local
 		lookup_queue.pop();
 	}
 	else {
@@ -295,10 +303,6 @@ void receiveUpdateSock()
 		frame.setEthSource(eth_source);
 		frame.setEthProtocol(htons(RawSock::MIPRawSock::ETH_P_MIP));
 		pair.sock->sendMipFrame(frame);
-		//std::cout << "Send ad on raw sock:\n";
-		//std::cout << "ad_size: " << ad_size << "\n";
-		//std::cout << "ad_length field: " << (int)*reinterpret_cast<std::uint16_t*>(frame.getMsg()) << "\n";;
-		//std::cout << "frame msg size: " << frame.getMsgSize() << "\n";
 	}
 }
 
@@ -361,9 +365,6 @@ void receiveRawSock(RawSock::MIPRawSock & sock)
 		//cache frame in lookup_queue
 		//send:
 		//	mip
-
-		std::cout << "MIP_deamon: received transport frame from mip: "<< (int)mip_frame.getMipSource() << "\n";
-
 		if (std::find_if(raw_sock_vec.begin(), raw_sock_vec.end(), [&](RawSock::MIPRawSock & s) { return s.getMip() == dest_mip; }) == raw_sock_vec.end()) {
 			int ttl = mip_frame.getMipTTL();
 			if (ttl <= 0) {

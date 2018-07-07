@@ -92,7 +92,7 @@ Global:
 */
 void sendTransportSock()
 {
-	std::cout << "transport_deamon: sendTransportSock()\n";
+	//std::cout << "transport_deamon: sendTransportSock()\n";
 	//try to send frames until wouldblock
 	while (!frame_out_queue.empty()) {
 		try {
@@ -125,7 +125,7 @@ Global:
 */
 void receiveTransportSock()
 {
-	std::cout << "transport_deamon: Receive transport_sock" << "\n";
+	//std::cout << "transport_deamon: Receive transport_sock" << "\n";
 	try {
 		while (true) {
 			static MIPTPFrame frame;
@@ -154,14 +154,9 @@ void receiveTransportSock()
 				(*client_it)->receiveFrame(source, frame);
 				if ((*client_it)->getStage() == ClientHandler::stage_failure) {
 					client_vector.erase(client_it);
-
-					std::cout << "transport_deamon: ClientHandler::stage_failure\n";
-
 				}
 			}
-			else {
-				std::cout << "transport_deamon: nothing at port: " << (int)frame_dest_port << "\n";
-			}
+			//else drop frame
 		}
 	}
 	catch (LinuxException::WouldBlockException & e) {
@@ -205,9 +200,6 @@ void handleClientHandlerSock(std::vector<std::unique_ptr<ClientHandler>>::iterat
 	(*client_it)->handleSock();
 	if ((*client_it)->getStage() == ClientHandler::stage_failure) {
 		client_vector.erase(client_it);
-
-		std::cout << "transport_deamon: ClientHandler::stage_failure\n";
-
 	}
 }
 
@@ -226,8 +218,6 @@ void handleClientHandlerTimer(std::vector<std::unique_ptr<ClientHandler>>::itera
 	(*client_it)->handleTimer();
 	if ((*client_it)->getStage() == ClientHandler::stage_failure) {
 		client_vector.erase(client_it);
-
-		std::cout << "transport_deamon: ClientHandler::stage_failure\n";
 	}
 }
 
@@ -295,12 +285,10 @@ int main(int argc, char** argv)
 				std::vector<std::unique_ptr<ClientHandler>>::iterator client_it;
 				int in_fd = ev.data.fd;
 				if (in_fd == transport_sock.getFd()) {
-					std::cout << "transport_deamon: transport_sock\n";
 					//try to receive
 					receiveTransportSock();
 				}
 				else if (in_fd == application_sock.getFd()) {
-					std::cout << "transport_deamon: application_sock\n";
 					receiveApplicationSock();
 				}
 				else if (client_it = std::find_if(
@@ -309,7 +297,6 @@ int main(int argc, char** argv)
 					[&](std::unique_ptr<ClientHandler> & ptr) { return ptr->getSock().getFd() == in_fd; }),
 					client_it != client_vector.end())
 				{
-					std::cout << "transport_deamon: client_it sock\n";
 					handleClientHandlerSock(client_it);
 				}
 				else if (client_it = std::find_if(
@@ -318,7 +305,6 @@ int main(int argc, char** argv)
 					[&](std::unique_ptr<ClientHandler> & ptr) {return ptr->getTimer().getFd() == in_fd; }),
 					client_it != client_vector.end())
 				{
-					std::cout << "transport_deamon: client_it timer\n";
 					handleClientHandlerTimer(client_it);
 				}
 				else {

@@ -86,9 +86,6 @@ void ClientHandler::handleSock()
 					frame.setMsgSize(0);
 					//send
 					m_out_queue.emplace(m_dest_address, frame);
-
-					std::cout << "transport_deamon: client sending request, type: " << frame.getType() << "\n";
-
 					//set timeout
 					m_timer.setExpirationFromNow(m_timeout);
 					//set stage
@@ -107,11 +104,9 @@ void ClientHandler::handleSock()
 			}
 		}
 		catch (LinuxException::WouldBlockException & e) {
-			std::cout << "transport_deamon: WouldBlockException\n";
 			return;
 		}
 		catch (LinuxException::BrokenPipeException & e) {
-			std::cout << "transport_deamon: BrokenPipeException\n";
 			m_stage = stage_failure;
 			return;
 		}
@@ -143,24 +138,12 @@ void ClientHandler::handleTimer()
 		if (m_type == type_server) {
 			//send ack
 			queueAck();
-
 			//try to send to sock
 			sendToSock();
-
-			std::cout	<< "transport_deamon: m_current_ack: " << (int)m_current_ack 
-						<< " m_total_data_received: " << m_total_data_received
-						<< "\n";
-
 		}
 		else if (m_type == type_client) {
 			//send window
 			queueWindow();
-
-			std::cout	<< "transport_deamon: m_sequence_base: " << (int)m_sequence_base 
-						<< " m_used_slots: " << m_used_slots
-						<< " m_total_data_loaded: " << m_total_data_loaded
-						<< "\n";
-		
 		}
 		else {
 			assert(false);
@@ -188,11 +171,7 @@ void ClientHandler::handleTimer()
 void ClientHandler::receiveFrame(MIPAddress source, MIPTPFrame & in_frame)
 {
 	if (m_stage == stage_listen) {
-		std::cout << "transport_deamon: server got frame, type: " << in_frame.getType() << "\n";
-
 		if (in_frame.getType() == MIPTPFrame::request) {
-			std::cout << "transport_deamon: server got request frame\n";
-			
 			//store addresses
 			m_dest_address = source;
 			m_dest_port = in_frame.getSource();
@@ -205,9 +184,6 @@ void ClientHandler::receiveFrame(MIPAddress source, MIPTPFrame & in_frame)
 			out_frame.setMsgSize(0);
 			//send
 			m_out_queue.emplace(m_dest_address, out_frame);
-
-			
-
 			try {
 				//reply sock
 				std::uint8_t reply = TransportInterface::reply_success;
@@ -260,49 +236,50 @@ void ClientHandler::receiveFrame(MIPAddress source, MIPTPFrame & in_frame)
 		}
 	}
 	else if (m_stage == stage_connected) {
-		int frame_type = in_frame.getType();
-		if (m_type == type_server) {
-			if (frame_type == MIPTPFrame::data) {
-				if (in_frame.getSequenceNumber() == m_current_ack) {
-					m_current_ack = (m_current_ack + 1) % m_sequence_size;
-					m_msg_buffer.insert(m_msg_buffer.end(), in_frame.getMsg(), in_frame.getMsg() + in_frame.getMsgSize());
-
-					m_total_data_received += in_frame.getMsgSize();
-
-				}
-				else {
-					queueAck();
-				}
-			}
-		}
-		else if (m_type == type_client) {
-			if (frame_type == MIPTPFrame::sack) {
-				int seq_num = in_frame.getSequenceNumber();
-				if (seqInsideWindow(seq_num) || seq_num == (m_sequence_base + m_window_size) % m_sequence_size) {
-					if (seq_num != m_sequence_base) {
-						moveWindow(calcMoves(seq_num));
+		//check if frame is from correct source
+		if (source == m_dest_address && in_frame.getSource() == m_dest_port) {
+			int frame_type = in_frame.getType();
+			if (m_type == type_server) {
+				if (frame_type == MIPTPFrame::data) {
+					if (in_frame.getSequenceNumber() == m_current_ack) {
+						m_current_ack = (m_current_ack + 1) % m_sequence_size;
+						m_msg_buffer.insert(m_msg_buffer.end(), in_frame.getMsg(), in_frame.getMsg() + in_frame.getMsgSize());
+						m_total_data_received += in_frame.getMsgSize();
 					}
-					queueWindow();
+					else {
+						queueAck();
+					}
 				}
 			}
+			else if (m_type == type_client) {
+				if (frame_type == MIPTPFrame::sack) {
+					int seq_num = in_frame.getSequenceNumber();
+					if (seqInsideWindow(seq_num) || seq_num == (m_sequence_base + m_window_size) % m_sequence_size) {
+						if (seq_num != m_sequence_base) {
+							moveWindow(calcMoves(seq_num));
+						}
+						queueWindow();
+					}
+				}
+			}
+			//check if request_frame
+			if (frame_type == MIPTPFrame::request) {
+				//if request then reply
+				static MIPTPFrame reply_frame;
+				reply_frame.setType(MIPTPFrame::reply);
+				reply_frame.setDest(m_dest_port);
+				reply_frame.setSource(m_source_port);
+				reply_frame.setSequenceNumber(0);
+				reply_frame.setMsgSize(0);
+				m_out_queue.emplace(m_dest_address, reply_frame);
+				m_connected_reply = true;	//if we receive connect then we're connected too (redundancy in case we lose a request)
+			}
+			else if (frame_type == MIPTPFrame::reply) {
+				//if reply then we're still connected
+				m_connected_reply = true;
+			}
 		}
-		
-		//check if request_frame
-		if (frame_type == MIPTPFrame::request) {
-			//if request then reply
-			static MIPTPFrame reply_frame;
-			reply_frame.setType(MIPTPFrame::reply);
-			reply_frame.setDest(m_dest_port);
-			reply_frame.setSource(m_source_port);
-			reply_frame.setSequenceNumber(0);
-			reply_frame.setMsgSize(0);
-			m_out_queue.emplace(m_dest_address, reply_frame);
-			m_connected_reply = true;	//if we receive connect then we're connected too (redundancy in case we lose a request)
-		}
-		else if (frame_type == MIPTPFrame::reply) {
-			//if reply then we're still connected
-			m_connected_reply = true;
-		}
+		//else drop frame
 	}
 }
 
@@ -345,9 +322,6 @@ void ClientHandler::loadFrames()
 				frame.setSequenceNumber((m_sequence_base + m_used_slots) % m_sequence_size);
 				frame.setMsgSize(ret);
 				++m_used_slots;
-
-				std::cout << "transport_deamon: m_used_slots: " << m_used_slots << "\n";
-
 				m_total_data_loaded += frame.getMsgSize();
 			}
 		}
@@ -380,8 +354,6 @@ void ClientHandler::moveWindow(int moves)
 			m_used_slots = 0;
 		}
 		m_sequence_base = (m_sequence_base + moves) % m_sequence_size;
-
-		std::cout << "transport_deamon: m_used_slots: " << m_used_slots << "\n";
 	}
 }
 
@@ -424,8 +396,6 @@ void ClientHandler::queueAck()
 	frame.setSequenceNumber(m_current_ack);
 	frame.setMsgSize(0);
 	m_out_queue.emplace(m_dest_address, frame);
-
-	std::cout << "transport_deamon: queued ack seq num: " << m_current_ack << "\n";
 }
 
 void ClientHandler::sendToSock()

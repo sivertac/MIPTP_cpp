@@ -2,9 +2,10 @@
 #Author: Sivert Andresen Cubedo
 
 CC = g++
-FLAGS = -Wall -Werror -std=c++11 -DLINUX -pthread
+FLAGS = -Wall -Werror -std=c++11 -DLINUX -pthread -O3
 
-BINARIES =	main MIP_deamon routing_deamon transport_deamon \
+BINARIES =	main \
+			MIP_deamon routing_deamon transport_deamon \
 			file_receiver file_sender \
 			file_compare file_generate
 
@@ -41,7 +42,6 @@ file_compare: src/file_compare.cpp $(OBJECTS)
 
 file_generate: src/file_generate.cpp $(OBJECTS)
 	$(CC) $(FLAGS) -o file_generate src/file_generate.cpp $(OBJECTS)
-
 
 #objects
 MIPFrame.o: src/MIPFrame.cpp include/MIPFrame.hpp

@@ -27,7 +27,7 @@ void DistanceVectorTable::packAdvertisment(std::vector<char>& buf, MIPAddress de
 	std::lock_guard<std::mutex> lock(m_mutex);
 	//size 2 byte
 	//ad
-	std::uint16_t size;
+	std::uint16_t size = 0;
 	buf.clear();
 	buf.resize(sizeof(size));
 	for (Column & c : m_data) {

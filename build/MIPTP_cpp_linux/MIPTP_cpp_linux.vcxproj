@@ -110,7 +110,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\AddressTypes.hpp" />
-    <ClInclude Include="..\..\include\Application.hpp" />
     <ClInclude Include="..\..\include\CircleBuffer.hpp" />
     <ClInclude Include="..\..\include\ClientHandler.hpp" />
     <ClInclude Include="..\..\include\CrossForkExec.hpp" />
@@ -126,7 +125,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\AddressTypes.cpp" />
-    <ClCompile Include="..\..\src\Application.cpp" />
     <ClCompile Include="..\..\src\ClientHandler.cpp" />
     <ClCompile Include="..\..\src\CrossForkExec.cpp" />
     <ClCompile Include="..\..\src\CrossIPC.cpp" />
@@ -143,8 +141,6 @@
     <ClCompile Include="..\..\src\MIP_deamon.cpp" />
     <ClCompile Include="..\..\src\RawSock.cpp" />
     <ClCompile Include="..\..\src\routing_deamon.cpp" />
-    <ClCompile Include="..\..\src\test_client.cpp" />
-    <ClCompile Include="..\..\src\test_server.cpp" />
     <ClCompile Include="..\..\src\TimerWrapper.cpp" />
     <ClCompile Include="..\..\src\TransportInterface.cpp" />
     <ClCompile Include="..\..\src\transport_deamon.cpp" />

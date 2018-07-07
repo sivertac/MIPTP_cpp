@@ -238,7 +238,6 @@ Handler for update_thread.
 */
 void update_thread_handler()
 {
-	std::cout << "update_thread start\n";
 	while (true) {
 		std::pair<bool, MIPAddress> pair;
 		{
@@ -265,7 +264,6 @@ Handler for lookup_thread.
 */
 void lookup_thread_handler()
 {
-	std::cout << "lookup_thread start\n";
 	while (true) {
 		MIPAddress mip;
 		{
