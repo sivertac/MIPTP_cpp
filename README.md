@@ -97,14 +97,4 @@ Todo: write discussion about how blocking sockets in this paticular design is ba
 To test the programs we need multiple systems connected together over ethernet connections creating a network, and we need systems (routers) with more than one ethernet interface. The easiest way to do this is to create a virtual network on a machine. For this project I used [Mininet](http://mininet.org/) to test the system.
 
 ## Demo
-### Todo: Create demonstations
-
-![](../demo/test_gif.gif)
-Showing how each host discovers the network topology together. 
-
-	Todo: Show File transmission in action
-	Showing a file send from a file_sender to a file_receiver via the network.
-
-	Todo: Show File transmission with lossy links
-	Showing that the sliding window protocol is reliable with lossy links.
-
+Comming soon (tm)
