@@ -458,8 +458,9 @@ int main(int argc, char** argv)
 	//Connect routing_deamon
 	{
 		auto pair1 = AnonymousSocket::createPair();
+
 		auto pair2 = AnonymousSocket::createPair();
-		
+
 		std::vector<std::string> args(2);
 		args[0] = pair1.second.toString();
 		args[1] = pair2.second.toString();
@@ -467,6 +468,7 @@ int main(int argc, char** argv)
 
 		update_sock = pair1.first;
 		lookup_sock = pair2.first;
+		
 		pair1.second.closeResources();
 		pair2.second.closeResources();
 	}

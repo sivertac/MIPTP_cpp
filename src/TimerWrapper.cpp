@@ -15,17 +15,16 @@ TimerWrapper::TimerWrapper() :
 
 void TimerWrapper::setExpirationFromNow(int ms)
 {
-	struct timespec now_time;
 	struct timespec in_time = msToTimespec(ms);
 	struct itimerspec spec;
-	if (clock_gettime(CLOCK_REALTIME, &now_time) == -1) {
-		LinuxException::Error("clock_gettime()");
-	}
+	
 	spec.it_interval.tv_sec = 0;
 	spec.it_interval.tv_nsec = 0;
-	spec.it_value.tv_sec = now_time.tv_sec + in_time.tv_sec;
-	spec.it_value.tv_nsec = now_time.tv_nsec + in_time.tv_nsec;
-	if (timerfd_settime(m_fd, TFD_TIMER_ABSTIME, &spec, NULL) == -1) {
+	
+	spec.it_value.tv_sec = in_time.tv_sec;
+	spec.it_value.tv_nsec = in_time.tv_nsec;
+
+	if (timerfd_settime(m_fd, CLOCK_REALTIME, &spec, NULL) == -1) {
 		throw LinuxException::Error("timerfd_settime()");
 	}
 }
@@ -66,6 +65,7 @@ int TimerWrapper::timespecToMs(timespec & t)
 
 timespec TimerWrapper::msToTimespec(int ms)
 {
+	assert(ms > 0);
 	struct timespec t;
 	t.tv_sec = ms / 1000;
 	t.tv_nsec = (ms % 1000) * 1000000;

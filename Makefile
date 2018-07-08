@@ -2,7 +2,7 @@
 #Author: Sivert Andresen Cubedo
 
 CC = g++
-FLAGS = -Wall -Werror -std=c++11 -DLINUX -pthread -O3
+FLAGS = -Wall -Werror -std=c++11 -DLINUX -pthread
 
 BINARIES =	main \
 			MIP_deamon routing_deamon transport_deamon \

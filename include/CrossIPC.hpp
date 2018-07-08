@@ -50,6 +50,7 @@ public:
 		sock_string		ref to string
 	*/
 	AnonymousSocket(const std::string & sock_string);
+
 #ifdef WINDOWS
 	/*
 	Constructor.

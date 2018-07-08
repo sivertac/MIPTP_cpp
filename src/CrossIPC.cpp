@@ -5,7 +5,9 @@
 
 
 AnonymousSocket::AnonymousSocket() :
-	m_closed(true)
+	m_fd(0),
+	m_closed(true),
+	m_nonblock(false)
 {
 }
 #ifdef WINDOWS

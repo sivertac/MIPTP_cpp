@@ -13,7 +13,7 @@ A small project to port a project that was origninally written in C to C++, and 
 * [Demo](#Demo)
 
 ## Disclaimer
-This project is for educational purposes only and should not be used in any real life application.
+This project is for educational purposes only and should not be used in any professional application.
 
 
 ## Goal
@@ -94,15 +94,17 @@ Todo: write discussion about how blocking sockets in this paticular design is ba
 	./file_receiver <transport_deamon sock> <file storage directory> <listen port>
 
 ## Test environment
-To test the system we need to create a test environment 
-
-### Todo: explain test enviroment
-http://mininet.org/
+To test the programs we need multiple systems connected together over ethernet connections creating a network, and we need systems (routers) with more than one ethernet interface. The easiest way to do this is to create a virtual network on a machine. For this project I used [Mininet](http://mininet.org/) to test the system.
 
 ## Demo
 ### Todo: Create demonstations
-	Todo: Show ARP in action
-	Todo: Show DVR in action
+
+![](../demo/test_gif.gif)
+Showing how each host discovers the network topology together. 
+
 	Todo: Show File transmission in action
+	Showing a file send from a file_sender to a file_receiver via the network.
+
 	Todo: Show File transmission with lossy links
+	Showing that the sliding window protocol is reliable with lossy links.
 

@@ -59,7 +59,14 @@ int main(int argc, char** argv)
 	//receive file
 	total_bytes_received += sock.readGenericUntil(buffer_size);
 	buffer.resize(buffer_size);
-	total_bytes_received += sock.readUntil(buffer.data(), buffer_size);
+	std::size_t ret = 0;
+	while (ret < buffer_size) {
+		ret += sock.read(buffer.data() + ret, buffer_size - ret);
+		
+		std::cout << "file_receiver: " << ret << "/" << buffer_size << "\n";
+	}
+
+	total_bytes_received += ret;
 
 	sock.closeResources();
 

@@ -15,7 +15,26 @@
 #include "../include/AddressTypes.hpp"
 #include "../include/CrossIPC.hpp"
 #include "../include/ClientHandler.hpp"
+#include "../include/TimerWrapper.hpp"
 
+
+int main(int argc, char** argv)
+{
+	TimerWrapper timer;
+
+	int ms = 2001;
+
+	struct timespec t;
+	t.tv_sec = ms / 1000;
+	t.tv_nsec = (ms % 1000) * 1000000;
+
+	std::cout << t.tv_sec << "\n";
+	std::cout << t.tv_nsec << "\n";
+
+	return 0;
+}
+
+/*
 int m_sequence_base = 10;
 const int m_window_size = 10;
 const int m_sequence_size = m_window_size * 2;
@@ -68,6 +87,7 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+*/
 
 /*
 int main(int argc, char** argv)
