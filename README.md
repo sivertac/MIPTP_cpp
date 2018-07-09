@@ -2,19 +2,8 @@
 Mini Internet Protocol Transport Protocol (MIPTP)
 A small project to port a project that was origninally written in C to C++, and to explore/use C++ features.
 
-## Table of contents
-* [Disclamer](#Disclaimer)
-* [Goal](#Goal)
-* [Design](#Design)
-* [Implementation details](#Implementation\ details)
-* [How to build](#How\ to\ build)
-* [How to run](#How\ to\ run)
-* [Test environment](#Test\ environment)
-* [Demo](#Demo)
-
 ## Disclaimer
 This project is for educational purposes only and should not be used in any professional application.
-
 
 ## Goal
 To implement the necessary network layers ontop of the linux raw socket interface (man 7 raw) to achieve:
@@ -97,4 +86,10 @@ Todo: write discussion about how blocking sockets in this paticular design is ba
 To test the programs we need multiple systems connected together over ethernet connections creating a network, and we need systems (routers) with more than one ethernet interface. The easiest way to do this is to create a virtual network on a machine. For this project I used [Mininet](http://mininet.org/) to test the system.
 
 ## Demo
-Comming soon (tm)
+### DVR
+![](demo/DVR_demo.gif)
+	Demonstating how nodes use distance vector routing to explore the network topology, in the end every node knows of every node, and they are able to detect nodes going offline (by setting cost to ininity(255)).
+
+### File transfer
+![](demo/file_transfer_demo.gif)
+ 	Demonstating two end systems sending a file. First a ___file_receiver___ is connecting to the ___transport_deamon___ at node A listening at port 1. Then a ___file_sender___ is connecting to the ___transport_deamon___ at node E asking to connect to port 1 at address 10. The filetransfer is slow because the timeout argument for the transport_deamons is set to 1 second, by increasing this (and/or increasing the window size in the source) will speed up the transfer. 
